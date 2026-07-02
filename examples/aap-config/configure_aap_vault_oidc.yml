@@ -8,6 +8,15 @@
 # tower_host, tower_username, tower_password, and tower_verify_ssl at run-time.
 # Attach a "Red Hat Ansible Automation Platform" credential to the job template before
 # launching — do NOT set these values in Extra Variables.
+#
+# SECURITY: Credentials are passed to each uri task via url_username / url_password with
+# force_basic_auth: true. The uri module declares url_password with no_log=True in its
+# argument spec (ansible/modules/uri.py), which causes Ansible to scrub the value from
+# all task output and logs. Response bodies are additionally passed through sanitize_keys()
+# against the no_log value set before being returned to the controller.
+# The aap_auth_header pattern (b64encode of username:password stored in a play var) is
+# intentionally avoided — a play var is NOT scrubbed and would appear in verbose output.
+# no_log: true is also set on each task as a defence-in-depth measure.
 
 - name: Configure AAP for HashiCorp Vault JWT authentication
   hosts: localhost
@@ -19,7 +28,6 @@
 
   vars:
     aap_api_base: "https://{{ tower_host }}"
-    aap_auth_header: "Basic {{ (tower_username + ':' + tower_password) | b64encode }}"
 
   tasks:
     # -------------------------------------------------------------------------
@@ -33,8 +41,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/gateway/v1/settings/"
         method: PATCH
+        url_username: "{{ tower_username }}"
+        url_password: "{{ tower_password }}"
+        force_basic_auth: true
         headers:
-          Authorization: "{{ aap_auth_header }}"
           Content-Type: "application/json"
         body_format: json
         body:
@@ -44,6 +54,7 @@
           - 204
         validate_certs: "{{ tower_verify_ssl }}"
       register: oidc_enable_result
+      no_log: true
 
     - name: Report OIDC issuer enablement result
       ansible.builtin.debug:
@@ -56,8 +67,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/v2/credential_types/"
         method: POST
+        url_username: "{{ tower_username }}"
+        url_password: "{{ tower_password }}"
+        force_basic_auth: true
         headers:
-          Authorization: "{{ aap_auth_header }}"
           Content-Type: "application/json"
         body_format: json
         body:
@@ -89,6 +102,7 @@
           - 400
         validate_certs: "{{ tower_verify_ssl }}"
       register: credential_type_result
+      no_log: true
       failed_when:
         - credential_type_result.status == 400
         - "'name already exists' not in (credential_type_result.json | to_json)"
@@ -108,8 +122,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/v2/credential_types/"
         method: POST
+        url_username: "{{ tower_username }}"
+        url_password: "{{ tower_password }}"
+        force_basic_auth: true
         headers:
-          Authorization: "{{ aap_auth_header }}"
           Content-Type: "application/json"
         body_format: json
         body:
@@ -132,6 +148,7 @@
           - 400
         validate_certs: "{{ tower_verify_ssl }}"
       register: vault_bootstrap_token_type_result
+      no_log: true
       failed_when:
         - vault_bootstrap_token_type_result.status == 400
         - "'name already exists' not in (vault_bootstrap_token_type_result.json | to_json)"
@@ -147,8 +164,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/v2/credential_types/"
         method: POST
+        url_username: "{{ tower_username }}"
+        url_password: "{{ tower_password }}"
+        force_basic_auth: true
         headers:
-          Authorization: "{{ aap_auth_header }}"
           Content-Type: "application/json"
         body_format: json
         body:
@@ -171,6 +190,7 @@
           - 400
         validate_certs: "{{ tower_verify_ssl }}"
       register: hcp_vault_bootstrap_token_type_result
+      no_log: true
       failed_when:
         - hcp_vault_bootstrap_token_type_result.status == 400
         - "'name already exists' not in (hcp_vault_bootstrap_token_type_result.json | to_json)"
@@ -186,8 +206,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/v2/credential_types/"
         method: POST
+        url_username: "{{ tower_username }}"
+        url_password: "{{ tower_password }}"
+        force_basic_auth: true
         headers:
-          Authorization: "{{ aap_auth_header }}"
           Content-Type: "application/json"
         body_format: json
         body:
@@ -215,6 +237,7 @@
           - 400
         validate_certs: "{{ tower_verify_ssl }}"
       register: aap_admin_credential_type_result
+      no_log: true
       failed_when:
         - aap_admin_credential_type_result.status == 400
         - "'name already exists' not in (aap_admin_credential_type_result.json | to_json)"
@@ -230,8 +253,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/v2/credentials/"
         method: POST
+        url_username: "{{ tower_username }}"
+        url_password: "{{ tower_password }}"
+        force_basic_auth: true
         headers:
-          Authorization: "{{ aap_auth_header }}"
           Content-Type: "application/json"
         body_format: json
         body:
@@ -246,6 +271,7 @@
           - 201
         validate_certs: "{{ tower_verify_ssl }}"
       register: credential_result
+      no_log: true
 
     - name: Report credential instance creation
       ansible.builtin.debug:
