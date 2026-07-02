@@ -1,19 +1,19 @@
 ---
-# ---------------------------------------------------------------------------
-# This playbook configures an HCP Vault Dedicated cluster for AAP OIDC
-# JWT workload-identity authentication.
+# =============================================================================
+# HCP Vault Dedicated — JWT auth method configuration playbook
 #
-# It is structurally identical to examples/vault-config/configure_vault_oidc.yml
-# with exactly two HCP-specific additions:
-#   1. X-Vault-Namespace header added to every uri task — required because
-#      HCP Vault Dedicated uses Vault namespaces; the root namespace is 'admin'.
-#   2. namespace parameter added to the vault_kv2_write task.
+# This playbook targets HCP Vault Dedicated clusters.
 #
-# vault_token must be an HCP service principal token with the Contributor role
-# on the cluster. Obtain it from: HCP portal → Access Control →
-# Service Principals → your principal → Generate token.
-# Do NOT use a Vault root token — HCP Vault Dedicated does not expose root tokens.
-# ---------------------------------------------------------------------------
+# Key differences from examples/vault-config/configure_vault_oidc.yml:
+#   - The 'vault_namespace' variable (default: admin) is required. All Vault
+#     API calls on HCP Vault Dedicated must target a namespace; the root
+#     namespace on every HCP Vault Dedicated cluster is 'admin'.
+#   - The 'vault_token' must be an HCP service principal token with the
+#     Contributor role on the Vault cluster. It is NOT a root token — HCP
+#     Vault Dedicated does not expose root tokens. Obtain the token from the
+#     HCP portal: Access Control → Service Principals → your principal →
+#     Generate token.
+# =============================================================================
 
 - name: Configure HCP Vault Dedicated JWT auth method for AAP OIDC integration
   hosts: localhost

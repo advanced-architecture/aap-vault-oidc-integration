@@ -8,7 +8,7 @@
 vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
 
 # HCP service principal token. Obtain from the HCP portal:
-#   Access Control → Service Principals → your principal → Generate token
+# Access Control → Service Principals → your principal → Generate token
 # The service principal must have the Contributor role on the Vault cluster.
 # This token is used ONLY for initial configuration — NOT by AAP jobs.
 vault_token: "CHANGEME"
@@ -48,5 +48,5 @@ vault_kv_secret_path: "aap-demo/config"
 # TTL for Vault tokens issued to AAP jobs (keep short; 5 minutes is sufficient for most jobs)
 jwt_token_ttl: "300s"
 
-# Audience claim the AAP JWT must contain. Set this to the Vault cluster URL.
+# Audience claim the AAP JWT must contain. Set this to the HCP Vault cluster address for specificity.
 jwt_bound_audience: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
