@@ -1,0 +1,52 @@
+---
+# =============================================================================
+# HCP Vault Dedicated — specific variables
+# =============================================================================
+
+# HCP Vault Dedicated cluster URL.
+# Format: https://<cluster-id>.vault.<region>.hashicorp.cloud:8200
+vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
+
+# HCP service principal token. Obtain from the HCP portal:
+#   Access Control → Service Principals → your principal → Generate token
+# The service principal must have the Contributor role on the Vault cluster.
+# This token is used ONLY for initial configuration — NOT by AAP jobs.
+vault_token: "CHANGEME"
+
+# Vault namespace. HCP Vault Dedicated uses 'admin' as the root namespace.
+# All auth method and policy operations must target this namespace.
+vault_namespace: "admin"
+
+# =============================================================================
+# Shared variables — identical to examples/vault-config/vars.yml
+# =============================================================================
+
+# The full OIDC discovery URL of AAP 2.7's built-in OIDC issuer.
+# Vault uses this to fetch the JWKS public keys for JWT validation.
+# Format: https://<aap-controller-host>/api/gateway/v1/jwt/
+aap_oidc_discovery_url: "https://aap.example.com/api/gateway/v1/jwt/"
+
+# The mount path for the JWT auth method in Vault (no leading slash)
+vault_jwt_mount_path: "jwt"
+
+# Name of the JWT role Vault will use when AAP jobs authenticate
+vault_jwt_role_name: "aap-automation"
+
+# Name of the Vault policy to attach to the JWT role
+vault_policy_name: "aap-automation-policy"
+
+# KV v2 secret path that the demo playbook will read
+# Format: <mount>/data/<path> (e.g. secret/data/aap-demo/config)
+vault_secret_path: "secret/data/aap-demo/config"
+
+# The KV v2 mount name (without the /data/ segment)
+vault_kv_mount: "secret"
+
+# The path within the KV mount (without mount prefix)
+vault_kv_secret_path: "aap-demo/config"
+
+# TTL for Vault tokens issued to AAP jobs (keep short; 5 minutes is sufficient for most jobs)
+jwt_token_ttl: "300s"
+
+# Audience claim the AAP JWT must contain. Set this to the Vault cluster URL.
+jwt_bound_audience: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"

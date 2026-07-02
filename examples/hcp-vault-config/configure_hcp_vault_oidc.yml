@@ -1,0 +1,104 @@
+---
+# ---------------------------------------------------------------------------
+# This playbook configures an HCP Vault Dedicated cluster for AAP OIDC
+# JWT workload-identity authentication.
+#
+# It is structurally identical to examples/vault-config/configure_vault_oidc.yml
+# with exactly two HCP-specific additions:
+#   1. X-Vault-Namespace header added to every uri task — required because
+#      HCP Vault Dedicated uses Vault namespaces; the root namespace is 'admin'.
+#   2. namespace parameter added to the vault_kv2_write task.
+#
+# vault_token must be an HCP service principal token with the Contributor role
+# on the cluster. Obtain it from: HCP portal → Access Control →
+# Service Principals → your principal → Generate token.
+# Do NOT use a Vault root token — HCP Vault Dedicated does not expose root tokens.
+# ---------------------------------------------------------------------------
+
+- name: Configure HCP Vault Dedicated JWT auth method for AAP OIDC integration
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Enable JWT auth method at configured mount path
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/sys/auth/{{ vault_jwt_mount_path }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          X-Vault-Namespace: "{{ vault_namespace }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          type: "jwt"
+        status_code: [200, 204, 400]
+      register: enable_jwt_result
+      failed_when:
+        - enable_jwt_result.status == 400
+        - "'path is already in use' not in (enable_jwt_result.json.errors | default([]) | join(' '))"
+
+    - name: Configure JWT auth method with AAP OIDC discovery URL
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/auth/{{ vault_jwt_mount_path }}/config"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          X-Vault-Namespace: "{{ vault_namespace }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          oidc_discovery_url: "{{ aap_oidc_discovery_url }}"
+          default_role: "{{ vault_jwt_role_name }}"
+        status_code: [200, 204]
+
+    - name: Create Vault policy granting read access to the demo secret path
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/sys/policies/acl/{{ vault_policy_name }}"
+        method: PUT
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          X-Vault-Namespace: "{{ vault_namespace }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          policy: |
+            path "{{ vault_secret_path }}" {
+              capabilities = ["read", "list"]
+            }
+
+            path "{{ vault_secret_path }}/*" {
+              capabilities = ["read", "list"]
+            }
+        status_code: [200, 204]
+
+    - name: Create JWT role for AAP automation jobs
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/auth/{{ vault_jwt_mount_path }}/role/{{ vault_jwt_role_name }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          X-Vault-Namespace: "{{ vault_namespace }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          bound_audiences:
+            - "{{ jwt_bound_audience }}"
+          user_claim: "sub"
+          policies:
+            - "{{ vault_policy_name }}"
+          token_ttl: "{{ jwt_token_ttl }}"
+          role_type: "jwt"
+        status_code: [200, 204]
+
+    - name: Write sample secret to KV v2 for demo playbook
+      community.hashi_vault.vault_kv2_write:
+        url: "{{ vault_addr }}"
+        token: "{{ vault_token }}"
+        namespace: "{{ vault_namespace }}"
+        engine_mount_point: "{{ vault_kv_mount }}"
+        path: "{{ vault_kv_secret_path }}"
+        data:
+          username: "demo-user"
+          password: "demo-secret-value"

@@ -1,0 +1,17 @@
+---
+# Address of the HCP Vault Dedicated cluster (no trailing slash)
+# Format: https://<cluster-id>.vault.<region>.hashicorp.cloud:8200
+vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
+
+# The JWT auth method mount path in Vault
+vault_jwt_mount_path: "jwt"
+
+# The JWT role name in Vault that this job will authenticate against
+vault_jwt_role_name: "aap-automation"
+
+# The KV v2 path to read. Format: <mount>/data/<path>
+vault_secret_path: "secret/data/aap-demo/config"
+
+# HCP Vault Dedicated namespace. Must be set to 'admin' for HCP Vault Dedicated clusters.
+# All Vault API calls (login, read) must target this namespace.
+vault_namespace: "admin"
