@@ -1,0 +1,121 @@
+---
+# NOTE: The OIDC issuer enablement step (Task 1 below) uses the AAP Gateway settings API.
+# The exact endpoint path and setting key should be verified against the live AAP 2.7 instance
+# during testing. The endpoint used here is based on AAP 2.7 documentation and may differ
+# depending on the deployment topology (standalone controller vs. platform gateway).
+
+- name: Configure AAP for HashiCorp Vault JWT authentication
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vars.yml
+
+  vars:
+    aap_api_base: "https://{{ aap_host }}"
+    aap_auth_header: "Basic {{ (aap_username + ':' + aap_password) | b64encode }}"
+
+  tasks:
+    # -------------------------------------------------------------------------
+    # Task 1 — Enable the AAP OIDC / JWT issuer
+    # NOTE: Verify the exact endpoint and setting key against your AAP 2.7 instance.
+    # The Gateway settings endpoint below is the expected path for AAP 2.7 deployments
+    # that include the platform gateway component. On standalone controller-only deployments
+    # the endpoint may instead be /api/v2/settings/system/.
+    # -------------------------------------------------------------------------
+    - name: Enable AAP OIDC issuer via Gateway settings API
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/api/gateway/v1/settings/"
+        method: PATCH
+        headers:
+          Authorization: "{{ aap_auth_header }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          ANSIBLE_CONTROLLER_GATEWAY_ENABLED: true
+        status_code:
+          - 200
+          - 204
+        validate_certs: "{{ aap_validate_certs }}"
+      register: oidc_enable_result
+
+    - name: Report OIDC issuer enablement result
+      ansible.builtin.debug:
+        msg: "OIDC issuer setting applied (HTTP {{ oidc_enable_result.status }})"
+
+    # -------------------------------------------------------------------------
+    # Task 2 — Create the custom credential type for HashiCorp Vault JWT auth
+    # -------------------------------------------------------------------------
+    - name: Create HashiCorp Vault JWT credential type
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/api/v2/credential_types/"
+        method: POST
+        headers:
+          Authorization: "{{ aap_auth_header }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "HashiCorp Vault JWT"
+          kind: "cloud"
+          inputs:
+            fields:
+              - id: "vault_addr"
+                type: "string"
+                label: "Vault Address"
+              - id: "vault_jwt_mount"
+                type: "string"
+                label: "JWT Auth Mount Path"
+              - id: "vault_role"
+                type: "string"
+                label: "JWT Role Name"
+            required:
+              - "vault_addr"
+              - "vault_jwt_mount"
+              - "vault_role"
+          injectors:
+            extra_vars:
+              vault_addr: "{% raw %}{{ vault_addr }}{% endraw %}"
+              vault_jwt_mount: "{% raw %}{{ vault_jwt_mount }}{% endraw %}"
+              vault_role: "{% raw %}{{ vault_role }}{% endraw %}"
+        status_code:
+          - 200
+          - 201
+        validate_certs: "{{ aap_validate_certs }}"
+      register: credential_type_result
+
+    - name: Capture credential type ID
+      ansible.builtin.set_fact:
+        vault_jwt_credential_type_id: "{{ credential_type_result.json.id }}"
+
+    - name: Report credential type creation
+      ansible.builtin.debug:
+        msg: "Created credential type 'HashiCorp Vault JWT' with ID {{ vault_jwt_credential_type_id }}"
+
+    # -------------------------------------------------------------------------
+    # Task 3 — Create a credential instance of the new type
+    # -------------------------------------------------------------------------
+    - name: Create Vault JWT credential instance
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/api/v2/credentials/"
+        method: POST
+        headers:
+          Authorization: "{{ aap_auth_header }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "Vault JWT - {{ vault_jwt_role_name }}"
+          credential_type: "{{ vault_jwt_credential_type_id }}"
+          inputs:
+            vault_addr: "{{ vault_addr }}"
+            vault_jwt_mount: "{{ vault_jwt_mount_path }}"
+            vault_role: "{{ vault_jwt_role_name }}"
+        status_code:
+          - 200
+          - 201
+        validate_certs: "{{ aap_validate_certs }}"
+      register: credential_result
+
+    - name: Report credential instance creation
+      ansible.builtin.debug:
+        msg: "Created credential '{{ credential_result.json.name }}' with ID {{ credential_result.json.id }}"

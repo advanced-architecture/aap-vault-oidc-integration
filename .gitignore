@@ -1,0 +1,6 @@
+.vault_token
+*.retry
+*.tfstate
+__pycache__/
+.env
+*.pyc

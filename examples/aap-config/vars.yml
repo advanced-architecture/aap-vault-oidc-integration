@@ -1,0 +1,22 @@
+---
+# AAP Controller hostname or IP (no trailing slash, no protocol)
+aap_host: "aap.example.com"
+
+# AAP admin credentials used to configure the platform via API
+aap_username: "admin"
+aap_password: "CHANGEME"
+
+# Whether to validate TLS certificates when calling the AAP API
+aap_validate_certs: true
+
+# Address of the Vault server (no trailing slash) — stored in the AAP credential
+vault_addr: "https://vault.example.com:8200"
+
+# The JWT auth method mount path in Vault
+vault_jwt_mount_path: "jwt"
+
+# The JWT role name in Vault that AAP jobs will authenticate against
+vault_jwt_role_name: "aap-automation"
+
+# The KV path that the demo playbook will read (used in job template extra_vars)
+vault_secret_path: "secret/data/aap-demo/config"
