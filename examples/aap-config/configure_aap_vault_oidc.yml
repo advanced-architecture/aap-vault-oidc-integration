@@ -16,7 +16,6 @@
 # against the no_log value set before being returned to the controller.
 # The aap_auth_header pattern (b64encode of username:password stored in a play var) is
 # intentionally avoided — a play var is NOT scrubbed and would appear in verbose output.
-# no_log: true is also set on each task as a defence-in-depth measure.
 
 - name: Configure AAP for HashiCorp Vault JWT authentication
   hosts: localhost
@@ -54,7 +53,6 @@
           - 204
         validate_certs: "{{ tower_verify_ssl }}"
       register: oidc_enable_result
-      no_log: true
 
     - name: Report OIDC issuer enablement result
       ansible.builtin.debug:
@@ -102,7 +100,6 @@
           - 400
         validate_certs: "{{ tower_verify_ssl }}"
       register: credential_type_result
-      no_log: true
       failed_when:
         - credential_type_result.status == 400
         - "'name already exists' not in (credential_type_result.json | to_json)"
@@ -148,7 +145,6 @@
           - 400
         validate_certs: "{{ tower_verify_ssl }}"
       register: vault_bootstrap_token_type_result
-      no_log: true
       failed_when:
         - vault_bootstrap_token_type_result.status == 400
         - "'name already exists' not in (vault_bootstrap_token_type_result.json | to_json)"
@@ -190,7 +186,6 @@
           - 400
         validate_certs: "{{ tower_verify_ssl }}"
       register: hcp_vault_bootstrap_token_type_result
-      no_log: true
       failed_when:
         - hcp_vault_bootstrap_token_type_result.status == 400
         - "'name already exists' not in (hcp_vault_bootstrap_token_type_result.json | to_json)"
@@ -237,7 +232,6 @@
           - 400
         validate_certs: "{{ tower_verify_ssl }}"
       register: aap_admin_credential_type_result
-      no_log: true
       failed_when:
         - aap_admin_credential_type_result.status == 400
         - "'name already exists' not in (aap_admin_credential_type_result.json | to_json)"
@@ -271,7 +265,6 @@
           - 201
         validate_certs: "{{ tower_verify_ssl }}"
       register: credential_result
-      no_log: true
 
     - name: Report credential instance creation
       ansible.builtin.debug:
