@@ -1,6 +1,6 @@
 # AAP + Vault OIDC Integration Pattern
 
-Secretless, identity-based authentication between Ansible Automation Platform 2.7 and self-managed HashiCorp Vault — no static credentials required.
+Secretless, identity-based authentication between Ansible Automation Platform 2.7 and HashiCorp Vault (self-managed or HCP Vault Dedicated) — no static credentials required.
 
 ---
 
@@ -28,6 +28,7 @@ AAP 2.7's built-in OIDC issuer mints a short-lived, cryptographically signed JWT
 
 - **Ansible Automation Platform 2.7+** (self-managed; provides the built-in OIDC issuer)
 - **HashiCorp Vault 1.9+** (self-managed; uses the native JWT/OIDC auth method)
+- **Or, for HCP Vault Dedicated:** an HCP account, an HCP Vault Dedicated cluster, and an HCP service principal with the Contributor role on the cluster
 - **`community.hashi_vault` collection >= 6.x** (provides `vault_login`, `vault_read`, and related modules)
 - **Network reachability** from AAP execution nodes to the Vault API endpoint, and from Vault to AAP's JWKS endpoint for token validation
 
@@ -87,6 +88,28 @@ sequenceDiagram
 
 ---
 
+## HCP Vault Dedicated
+
+[HCP Vault Dedicated](https://developer.hashicorp.com/hcp/docs/vault-dedicated) is a single-tenant, fully managed HashiCorp Vault cluster hosted on the HashiCorp Cloud Platform. It exposes the complete Vault API — including the JWT/OIDC auth method and `sys/policies` — so this OIDC integration pattern works identically on HCP Vault Dedicated with only a small number of configuration differences compared to a self-managed deployment.
+
+### Key Differences
+
+| Aspect | Self-Managed Vault | HCP Vault Dedicated |
+|---|---|---|
+| **Bootstrap credential** | Root token or admin token (`VAULT_TOKEN`) | HCP service principal token (obtained from the HCP portal or HCP CLI; requires Contributor role on the cluster) |
+| **Cluster URL format** | `https://<your-host>:<port>` | `https://<cluster-id>.vault.<region>.hashicorp.cloud:8200` |
+| **Namespace** | Not required (unless Vault Enterprise namespaces are in use) | `admin` — the default root namespace on every HCP Vault Dedicated cluster; all auth method and policy operations must target this namespace |
+| **Vault API surface** | Full Vault API | Full Vault API — `sys/auth`, `sys/policies/acl`, `auth/<mount>/config`, `auth/<mount>/role/<name>` all work identically |
+
+The AAP configuration (`examples/aap-config/`) is **identical** for both deployment models — no changes are needed on the AAP side. Only the Vault-side configuration and the demo playbook carry HCP-specific variables (`vault_namespace: admin` and the cluster URL format).
+
+See the HCP Vault Dedicated example playbooks:
+
+- [`examples/hcp-vault-config/`](examples/hcp-vault-config/) — configure the JWT auth method, policy, and role on HCP Vault Dedicated
+- [`examples/hcp-demo-playbook/`](examples/hcp-demo-playbook/) — end-to-end AAP job template demo against HCP Vault Dedicated
+
+---
+
 ## Usage / Quick Start
 
 1. **Configure Vault** — enable the JWT auth method, create the role, and seed the demo secret:
@@ -97,6 +120,16 @@ sequenceDiagram
 
 3. **Run the demo** — import and execute the end-to-end demonstration playbook as an AAP job template:
    see [`examples/demo-playbook/`](examples/demo-playbook/)
+
+### HCP Vault Dedicated
+
+Step 2 (Configure AAP) is shared between both deployment models — skip it if you have already completed it for self-managed Vault.
+
+4. **Configure HCP Vault Dedicated** — enable the JWT auth method, create the role and policy, and seed the demo secret in the `admin` namespace:
+   see [`examples/hcp-vault-config/`](examples/hcp-vault-config/)
+
+5. **Run the HCP demo** — import and execute the HCP Vault Dedicated demonstration playbook as an AAP job template:
+   see [`examples/hcp-demo-playbook/`](examples/hcp-demo-playbook/)
 
 ---
 
