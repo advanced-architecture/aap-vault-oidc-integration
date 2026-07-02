@@ -1,13 +1,8 @@
 ---
-# AAP Controller hostname or IP (no trailing slash, no protocol)
-aap_host: "aap.example.com"
-
-# AAP admin credentials used to configure the platform via API
-aap_username: "admin"
-aap_password: "CHANGEME"
-
-# Whether to validate TLS certificates when calling the AAP API
-aap_validate_certs: true
+# aap_host, aap_username, aap_password, and aap_validate_certs are NOT stored here.
+# They are injected at run-time by the built-in "Red Hat Ansible Automation Platform"
+# credential attached to the job template (kind: tower).
+# Injected variable names: tower_host, tower_username, tower_password, tower_verify_ssl
 
 # Address of the Vault server (no trailing slash) — stored in the AAP credential
 vault_addr: "https://vault.example.com:8200"

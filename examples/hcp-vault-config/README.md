@@ -54,15 +54,22 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 
 ---
 
-## How to Run
+## How to Run as an AAP Job Template
 
-Update `vars.yml` with your environment values, then run:
+> **Prerequisite:** Run `examples/aap-config/configure_aap_vault_oidc.yml` first. It creates the `HCP Vault Bootstrap Token` credential type in AAP that this playbook requires.
 
-```bash
-ansible-playbook configure_hcp_vault_oidc.yml
-# or pass the HCP service principal token directly without storing it in vars.yml:
-ansible-playbook configure_hcp_vault_oidc.yml -e vault_token=<your-hcp-sp-token>
-```
+1. In AAP, go to **Resources → Credentials → Add** and create a credential of type **HCP Vault Bootstrap Token**. Enter your HCP service principal token in the `HCP Service Principal Token` field.
+2. Create a job template (or update the existing one) with:
+   - **Playbook:** `examples/hcp-vault-config/configure_hcp_vault_oidc.yml`
+   - **Credentials:** attach the `HCP Vault Bootstrap Token` credential created above
+3. In the job template **Extra Variables** field, supply the environment-specific non-sensitive values:
+   ```yaml
+   vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
+   aap_oidc_discovery_url: "https://<your-aap-host>/api/gateway/v1/jwt/"
+   jwt_bound_audience: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
+   vault_namespace: "admin"
+   ```
+4. Launch the job template. The `vault_token` is injected securely from the credential — it never appears in the job log or Extra Variables.
 
 ---
 
@@ -74,3 +81,10 @@ The playbook creates the following resources in the `admin` namespace of your HC
 - **ACL policy** (`vault_policy_name`) granting `read` and `list` on `vault_secret_path` and its children, scoped to the `admin` namespace
 - **JWT role** (`vault_jwt_role_name`) binding the `aud` claim to `jwt_bound_audience`, attaching the ACL policy, and enforcing a short token TTL
 - **Sample KV v2 secret** at `vault_kv_secret_path` containing a `username` and `password` for use by the HCP demo playbook
+
+## Next Steps
+
+Once this playbook has run successfully:
+
+1. Configure the AAP side (if not already done) using [`../aap-config/`](../aap-config/README.md).
+2. Run the end-to-end HCP demo from [`../hcp-demo-playbook/read_hcp_vault_secret.yml`](../hcp-demo-playbook/README.md) as an AAP job template to verify the full JWT authentication flow against HCP Vault Dedicated.

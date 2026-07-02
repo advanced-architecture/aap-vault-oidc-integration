@@ -2,10 +2,8 @@
 # Address of the Vault server (no trailing slash)
 vault_addr: "https://vault.example.com:8200"
 
-# Bootstrap token used only during initial Vault configuration.
-# This token requires permissions to enable auth methods, write policies, and write secrets.
-# It is NOT used by AAP jobs — those use JWT authentication.
-vault_token: "s.CHANGEME"
+# vault_token is injected at run-time by the "Vault Bootstrap Token" AAP credential.
+# Do not add it here. Create a credential of that type in AAP with the Vault admin token.
 
 # The full OIDC discovery URL of AAP 2.7's built-in OIDC issuer.
 # Vault uses this to fetch the JWKS public keys for JWT validation.

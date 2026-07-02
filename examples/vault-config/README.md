@@ -39,15 +39,21 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 
 ---
 
-## How to Run
+## How to Run as an AAP Job Template
 
-Update `vars.yml` with your environment values, then run:
+> **Prerequisite:** Run `examples/aap-config/configure_aap_vault_oidc.yml` first. It creates the `Vault Bootstrap Token` credential type in AAP that this playbook requires.
 
-```bash
-ansible-playbook configure_vault_oidc.yml
-# or pass the bootstrap token directly without storing it in vars.yml:
-ansible-playbook configure_vault_oidc.yml -e vault_token=<your-bootstrap-token>
-```
+1. In AAP, go to **Resources → Credentials → Add** and create a credential of type **Vault Bootstrap Token**. Enter your Vault admin token in the `Vault Bootstrap Token` field.
+2. Create a job template (or update the existing one) with:
+   - **Playbook:** `examples/vault-config/configure_vault_oidc.yml`
+   - **Credentials:** attach the `Vault Bootstrap Token` credential created above
+3. In the job template **Extra Variables** field, supply the environment-specific non-sensitive values:
+   ```yaml
+   vault_addr: "https://<your-vault-host>:8200"
+   aap_oidc_discovery_url: "https://<your-aap-host>/api/gateway/v1/jwt/"
+   jwt_bound_audience: "https://<your-vault-host>:8200"
+   ```
+4. Launch the job template. The `vault_token` is injected securely from the credential — it never appears in the job log or Extra Variables.
 
 ---
 
@@ -59,3 +65,10 @@ The playbook creates the following resources in Vault:
 - **ACL policy** (`vault_policy_name`) granting `read` and `list` on `vault_secret_path` and its children
 - **JWT role** (`vault_jwt_role_name`) binding the `aud` claim to `jwt_bound_audience`, attaching the ACL policy, and enforcing a short token TTL
 - **Sample KV v2 secret** at `vault_kv_secret_path` containing a `username` and `password` for use by the demo playbook
+
+## Next Steps
+
+Once this playbook has run successfully:
+
+1. Configure the AAP side (if not already done) using [`../aap-config/`](../aap-config/README.md).
+2. Run the end-to-end demo from [`../demo-playbook/read_vault_secret.yml`](../demo-playbook/README.md) as an AAP job template to verify the full JWT authentication flow.

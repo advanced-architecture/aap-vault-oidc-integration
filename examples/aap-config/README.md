@@ -20,10 +20,10 @@ Edit `vars.yml` before running. All variables are required unless noted.
 
 | Variable | Default | Description |
 |---|---|---|
-| `aap_host` | `aap.example.com` | AAP Controller hostname or IP (no protocol, no trailing slash) |
-| `aap_username` | `admin` | AAP admin username |
-| `aap_password` | `CHANGEME` | AAP admin password — **change before use** |
-| `aap_validate_certs` | `true` | Validate TLS certificates when calling the AAP API. Set to `false` for self-signed certs in lab environments. |
+| `tower_host` | *(injected)* | AAP Controller hostname — injected by the built-in AAP platform credential; do not set in vars |
+| `tower_username` | *(injected)* | AAP admin username — injected by the built-in AAP platform credential |
+| `tower_password` | *(injected)* | AAP admin password — injected by the built-in AAP platform credential |
+| `tower_verify_ssl` | *(injected)* | TLS validation flag — injected by the built-in AAP platform credential |
 | `vault_addr` | `https://vault.example.com:8200` | Full Vault server URL (no trailing slash) |
 | `vault_jwt_mount_path` | `jwt` | JWT auth method mount path in Vault |
 | `vault_jwt_role_name` | `aap-automation` | JWT role name in Vault that AAP jobs authenticate against |
@@ -31,21 +31,31 @@ Edit `vars.yml` before running. All variables are required unless noted.
 
 ---
 
-## How to Run
+## How to Run as an AAP Job Template
 
-```bash
-# 1. Edit variables for your environment
-vi vars.yml
+This is the bootstrap step — run it once before running any other config playbooks. It uses AAP's built-in platform credential so no custom credential type is needed to get started.
 
-# 2. Run the playbook
-ansible-playbook configure_aap_vault_oidc.yml
-```
+1. In AAP, go to **Resources → Credentials → Add** and create a credential of type **Red Hat Ansible Automation Platform** with:
+   - **Host:** `https://<your-aap-host>`
+   - **Username:** your AAP admin username
+   - **Password:** your AAP admin password
+   - **Verify SSL:** set appropriately for your environment
+2. Create a job template with:
+   - **Playbook:** `examples/aap-config/configure_aap_vault_oidc.yml`
+   - **Credentials:** attach the **Red Hat Ansible Automation Platform** credential created above
+3. In the job template **Extra Variables** field, supply the non-sensitive values:
+   ```yaml
+   vault_addr: "https://<your-vault-host>:8200"
+   vault_jwt_mount_path: "jwt"
+   vault_jwt_role_name: "aap-automation"
+   ```
+4. Launch the job template. AAP admin credentials are injected securely — they never appear in Extra Variables or the job log.
 
-To disable TLS verification in a lab environment:
-
-```bash
-ansible-playbook configure_aap_vault_oidc.yml -e aap_validate_certs=false
-```
+After this job completes, the following credential types will exist in AAP and can be used by the other config playbooks:
+- **Vault Bootstrap Token** — for `examples/vault-config/`
+- **HCP Vault Bootstrap Token** — for `examples/hcp-vault-config/`
+- **HashiCorp Vault JWT** — for the demo playbooks
+- **AAP Admin Credential** — for future re-runs of this playbook without the built-in credential
 
 ---
 
@@ -69,8 +79,9 @@ ansible-playbook configure_aap_vault_oidc.yml -e aap_validate_certs=false
 
 ## Next Steps
 
-Once this playbook has run successfully:
+Once this playbook has run successfully, proceed to configure Vault:
 
-1. Complete the Vault-side configuration using `../vault-config/configure_vault_oidc.yml`.
-2. Attach the `Vault JWT - <role>` credential to your AAP job template.
-3. Run the end-to-end demo from `../demo-playbook/read_vault_secret.yml` to verify the full JWT authentication flow.
+- **Self-managed Vault** → run `../vault-config/configure_vault_oidc.yml` (see [`../vault-config/README.md`](../vault-config/README.md))
+- **HCP Vault Dedicated** → run `../hcp-vault-config/configure_hcp_vault_oidc.yml` (see [`../hcp-vault-config/README.md`](../hcp-vault-config/README.md))
+
+The `Vault JWT - aap-automation` credential created by this playbook is used by both the self-managed and HCP demo playbooks.
