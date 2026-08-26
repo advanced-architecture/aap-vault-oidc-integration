@@ -32,7 +32,9 @@ graph TD
    > **Bob tool:** `execute_command` → `date +%Y-%m-%d`
 2. **Read Current State:** Read `.github/.agents/plan.md` and check the list of tasks.
    > **Bob tool:** `read_file` → `.github/.agents/plan.md`
-3. **Synchronize:** Check git status and workspace structure to verify which tasks are truly pending or completed.
+3. **Read Open Tasks:** Read `TODO.md` for any outstanding items not yet in a plan sub-task.
+   > **Bob tool:** `read_file` → `TODO.md`
+4. **Synchronize:** Check git status and workspace structure to verify which tasks are truly pending or completed.
    > **Bob tool:** `execute_command` → `git status`
 
 ### Step 2: Atomic Execution Loop
@@ -53,6 +55,8 @@ Verify that the task is fully complete according to the Definition of Done:
 - [ ] Any script or config preserves existing user data and uses additive operations (P15).
 - [ ] Code files (especially scripts/playbooks) are clean, under 300 lines, and contain no TODOs without action items.
 - [ ] Update `.github/.agents/plan.md`: change the task status to `completed` using precise edits. Preserve all other text and formatting in the plan.
+- [ ] **Capture new work:** If any outstanding or follow-on tasks were identified during this session, add them to `TODO.md` before committing. Use `apply_diff` to append — do not overwrite existing entries.
+   > **Bob tool:** `apply_diff` → `TODO.md` (append new `- [ ]` items under the appropriate section)
 
 ---
 
