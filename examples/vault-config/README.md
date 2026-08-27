@@ -17,6 +17,17 @@ This playbook configures the HashiCorp Vault side of the AAP OIDC/JWT integratio
   - Write policies (`sys/policies/acl`)
   - Write secrets to the KV v2 mount
 
+In the case where a Vault server is needed, a Vault Dedicated cluster can be configured on portal.cloud.hashicorp.com/services/vault/clusters in a few clicks.  
+
+This repo was tested with a Vault Dedicated cluster with this process:
+1. Go to portal.cloud.hashicorp.com
+1. Create project: "vault-ansible-oidc"
+1. Click `Vault Dedicated` tile: Get started with Vault Dedicated
+2. Click `Start from scratch`
+3.  Accept the defaults (AWS, Development tier, Extra Small, default network HVN)
+4. Configure cluster ID to be unique within your HCP organization. I used "vault-cluster-ansible-oidc".
+5. Choose `Start from scratch`
+6. Enable reporting (currently beta)
 ---
 
 ## Variables
