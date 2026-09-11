@@ -11,8 +11,22 @@ This example configures Ansible Automation Platform (AAP) 2.7 to support secretl
 - No additional Ansible collections are required — all tasks use the `ansible.builtin.uri` module from Ansible core.
   > If you prefer a declarative approach using the `ansible.controller` (formerly `awx.awx`) collection, the collection can be installed with `ansible-galaxy collection install ansible.controller`. The playbook as written uses `uri` tasks for portability, so the collection is optional.
 - Network reachability from the machine running this playbook to the AAP API (`https://<aap_host>`).
+- The feature flag for OIDC Authentication must be turned on (see [Enable OIDC Feature Flag](#enable-oidc-feature-flag) below).
 
 ---
+
+## Enable OIDC Feature Flag
+
+The AAP Cluster must have the OIDC Feature Flag turned on. This feature flag is exposed via the yaml defining the Resource in the OpenShift cluster where AAP is running. There are a variety of ways to navigate to this resource definition. I found it via this path: OCP platform console -> Ecosystem -> Installed Operators -> Ansible Automation Platform -> (scroll to the right on the top bar ... Details, YAML, Subscription, Events, All instances, Automation Controller Backup, Automation Controller Restore, Automation Controller, ... until you get to Ansible Automation Platform) -> click on the name of your AAP; mine is `sandbox-aap` (if you cannot see it, change the "Show operands in" setting) -> YAML tab. Once there, use the guidance from the link below. I only needed to add the following into the `spec:` section.
+
+```yaml
+ feature_flags:
+    FEATURE_OIDC_WORKLOAD_IDENTITY_ENABLED: True
+```
+
+
+
+Extra helpful reading: [Just in Time Access to HashiCorp Vault](https://developers.redhat.com/articles/2026/08/11/just-in-time-access-to-hashicorp-vault-with-ansible-oidc-provider?source=sso#configure_ansible_access)
 
 ## Bootstrap Credential Permissions
 
