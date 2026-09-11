@@ -1,8 +1,10 @@
 ---
-# aap_host, aap_username, aap_password, and aap_validate_certs are NOT stored here.
-# They are injected at run-time by the built-in "Red Hat Ansible Automation Platform"
-# credential attached to the job template (kind: tower).
-# Injected variable names: tower_host, tower_username, tower_password, tower_verify_ssl
+# AAP admin credentials are read from environment variables at run-time.
+# Export these before running this playbook:
+#   export CONTROLLER_HOST="https://<your-aap-host>"
+#   export CONTROLLER_USERNAME="<admin-username>"
+#   export CONTROLLER_PASSWORD="<admin-password>"
+#   export CONTROLLER_VERIFY_SSL="true"   # set to false to skip TLS validation (optional)
 
 # Address of the Vault server (no trailing slash) — stored in the AAP credential
 vault_addr: "https://vault.example.com:8200"

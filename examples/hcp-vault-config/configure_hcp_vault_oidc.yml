@@ -17,11 +17,23 @@
 
 - name: Configure HCP Vault Dedicated JWT auth method for AAP OIDC integration
   hosts: localhost
+  connection: local
   gather_facts: false
   vars_files:
     - vars.yml
 
+  vars:
+    # Bootstrap credentials are read from environment variables.
+    # Set VAULT_TOKEN to an HCP service principal token (Contributor role) before running:
+    #   export VAULT_TOKEN="<your-hcp-service-principal-token>"
+    vault_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+
   tasks:
+    - name: Fail if VAULT_TOKEN is not set
+      ansible.builtin.fail:
+        msg: "VAULT_TOKEN environment variable is not set. Export your HCP service principal token before running this playbook."
+      when: vault_token | length == 0
+
     - name: Enable JWT auth method at configured mount path
       ansible.builtin.uri:
         url: "{{ vault_addr }}/v1/sys/auth/{{ vault_jwt_mount_path }}"

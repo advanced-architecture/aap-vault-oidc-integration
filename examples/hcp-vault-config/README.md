@@ -40,7 +40,7 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 | Variable | Description | Required | Default |
 |---|---|---|---|
 | `vault_addr` | HCP Vault Dedicated cluster URL | ✅ | `https://<cluster-id>.vault.<region>.hashicorp.cloud:8200` |
-| `vault_token` | HCP service principal token | ✅ | `CHANGEME` |
+| `vault_token` | HCP service principal token — read from `VAULT_TOKEN` env var | ✅ | *(env var)* |
 | `vault_namespace` | Vault namespace (HCP root namespace) | ✅ | `admin` |
 | `aap_oidc_discovery_url` | AAP 2.7 OIDC discovery URL (`/api/gateway/v1/jwt/`) | ✅ | `https://aap.example.com/api/gateway/v1/jwt/` |
 | `vault_jwt_mount_path` | Mount path for the Vault JWT auth method | ✅ | `jwt` |
@@ -54,22 +54,20 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 
 ---
 
-## How to Run as an AAP Job Template
+## How to Run
 
-> **Prerequisite:** Run `examples/aap-config/configure_aap_vault_oidc.yml` first. It creates the `HCP Vault Bootstrap Token` credential type in AAP that this playbook requires.
+Export your HCP service principal token as an environment variable, then run the playbook:
 
-1. In AAP, go to **Resources → Credentials → Add** and create a credential of type **HCP Vault Bootstrap Token**. Enter your HCP service principal token in the `HCP Service Principal Token` field.
-2. Create a job template (or update the existing one) with:
-   - **Playbook:** `examples/hcp-vault-config/configure_hcp_vault_oidc.yml`
-   - **Credentials:** attach the `HCP Vault Bootstrap Token` credential created above
-3. In the job template **Extra Variables** field, supply the environment-specific non-sensitive values:
-   ```yaml
-   vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
-   aap_oidc_discovery_url: "https://<your-aap-host>/api/gateway/v1/jwt/"
-   jwt_bound_audience: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
-   vault_namespace: "admin"
-   ```
-4. Launch the job template. The `vault_token` is injected securely from the credential — it never appears in the job log or Extra Variables.
+```bash
+export VAULT_TOKEN="<your-hcp-service-principal-token>"
+ansible-playbook examples/hcp-vault-config/configure_hcp_vault_oidc.yml \
+  -e vault_addr="https://<cluster-id>.vault.<region>.hashicorp.cloud:8200" \
+  -e aap_oidc_discovery_url="https://<your-aap-host>/api/gateway/v1/jwt/" \
+  -e jwt_bound_audience="https://<cluster-id>.vault.<region>.hashicorp.cloud:8200" \
+  -e vault_namespace="admin"
+```
+
+The remaining variables default to sensible values in `vars.yml` — override with `-e key=value` only if you need non-default names.
 
 ---
 

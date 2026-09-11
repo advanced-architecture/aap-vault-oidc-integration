@@ -39,7 +39,7 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 | Variable | Description | Required | Default |
 |---|---|---|---|
 | `vault_addr` | Vault server address (no trailing slash) | ✅ | `https://vault.example.com:8200` |
-| `vault_token` | Bootstrap admin token for initial configuration | ✅ | `s.CHANGEME` |
+| `vault_token` | Bootstrap admin token — read from `VAULT_TOKEN` env var | ✅ | *(env var)* |
 | `aap_oidc_discovery_url` | AAP 2.7 OIDC discovery URL (`/api/gateway/v1/jwt/`) | ✅ | `https://aap.example.com/api/gateway/v1/jwt/` |
 | `vault_jwt_mount_path` | Mount path for the Vault JWT auth method | ✅ | `jwt` |
 | `vault_jwt_role_name` | Name of the JWT role Vault creates for AAP jobs | ✅ | `aap-automation` |
@@ -52,21 +52,19 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 
 ---
 
-## How to Run as an AAP Job Template
+## How to Run
 
-> **Prerequisite:** Run `examples/aap-config/configure_aap_vault_oidc.yml` first. It creates the `Vault Bootstrap Token` credential type in AAP that this playbook requires.
+Export your Vault bootstrap credentials as environment variables, then run the playbook:
 
-1. In AAP, go to **Resources → Credentials → Add** and create a credential of type **Vault Bootstrap Token**. Enter your Vault admin token in the `Vault Bootstrap Token` field.
-2. Create a job template (or update the existing one) with:
-   - **Playbook:** `examples/vault-config/configure_vault_oidc.yml`
-   - **Credentials:** attach the `Vault Bootstrap Token` credential created above
-3. In the job template **Extra Variables** field, supply the environment-specific non-sensitive values:
-   ```yaml
-   vault_addr: "https://<your-vault-host>:8200"
-   aap_oidc_discovery_url: "https://<your-aap-host>/api/gateway/v1/jwt/"
-   jwt_bound_audience: "https://<your-vault-host>:8200"
-   ```
-4. Launch the job template. The `vault_token` is injected securely from the credential — it never appears in the job log or Extra Variables.
+```bash
+export VAULT_TOKEN="<your-vault-admin-token>"
+ansible-playbook examples/vault-config/configure_vault_oidc.yml \
+  -e vault_addr="https://<your-vault-host>:8200" \
+  -e aap_oidc_discovery_url="https://<your-aap-host>/api/gateway/v1/jwt/" \
+  -e jwt_bound_audience="https://<your-vault-host>:8200"
+```
+
+The remaining variables (`vault_jwt_mount_path`, `vault_jwt_role_name`, `vault_policy_name`, etc.) default to sensible values in `vars.yml` — override with `-e key=value` only if you need non-default names.
 
 ---
 

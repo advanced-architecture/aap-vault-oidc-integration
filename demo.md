@@ -51,11 +51,9 @@ Run the AAP configuration playbook as a job template. It enables the OIDC issuer
    | **Playbook** | `examples/aap-config/configure_aap_vault_oidc.yml` |
    | **Execution Environment** | Default EE (no extra collections required) |
 
-3. Under **Credentials**, add a credential of type **Red Hat Ansible Automation Platform** configured with your AAP host, admin username, and admin password.
+3. Under **Credentials**, no credential attachment is needed. AAP admin credentials are supplied via environment variables set in the execution environment before launch.
 
-   > **Note:** AAP admin credentials are stored in the AAP platform credential — do not put them in Extra Variables.
-
-4. In the **Extra Variables** field, supply the non-sensitive values:
+4. In the **Extra Variables** field, supply the required values:
 
    ```yaml
    vault_addr: "https://<your-vault-host>:8200"
@@ -63,13 +61,15 @@ Run the AAP configuration playbook as a job template. It enables the OIDC issuer
    vault_jwt_role_name: "aap-automation"
    ```
 
+   > AAP admin credentials (`CONTROLLER_HOST`, `CONTROLLER_USERNAME`, `CONTROLLER_PASSWORD`) must be set as environment variables in the execution environment before launching this job template.
+
 5. Click **Save**, then **Launch**
 
 ### Verify
 
 After the job completes, confirm in the AAP web UI:
 
-- **Resources → Credential Types** — types named `HashiCorp Vault JWT`, `Vault Bootstrap Token`, `HCP Vault Bootstrap Token`, and `AAP Admin Credential` exist
+- **Resources → Credential Types** — a type named `HashiCorp Vault JWT` exists
 - **Resources → Credentials** — a credential named `Vault JWT - aap-automation` exists
 
 > ⚠️ **OIDC issuer endpoint.** The playbook calls `PATCH /api/gateway/v1/settings/` to enable the AAP OIDC issuer. This is correct for AAP 2.7 platform-gateway deployments. On standalone controller-only deployments the endpoint may differ — see the [AAP 2.7 OIDC docs](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/whats_new-oidc_authentication_for_hashicorp_vault) and update the task if your job fails here.
@@ -100,9 +100,9 @@ Run the Vault configuration playbook as an AAP job template. It enables the JWT 
    | **Playbook** | `examples/vault-config/configure_vault_oidc.yml` |
    | **Execution Environment** | An EE with `community.hashi_vault >= 6.x` |
 
-3. Under **Credentials**, add a credential of type **Vault Bootstrap Token** containing your Vault admin token. This credential is created by Step 2 — run that first.
+3. Under **Credentials**, no credential attachment is needed. The Vault bootstrap token is supplied via the `VAULT_TOKEN` environment variable set in the execution environment.
 
-4. In the **Extra Variables** field, supply the non-sensitive environment values:
+4. In the **Extra Variables** field, supply the environment-specific values:
 
    ```yaml
    vault_addr: "https://<your-vault-host>:8200"
@@ -110,7 +110,7 @@ Run the Vault configuration playbook as an AAP job template. It enables the JWT 
    jwt_bound_audience: "https://<your-vault-host>:8200"
    ```
 
-   > The remaining variables (`vault_jwt_mount_path`, `vault_jwt_role_name`, `vault_policy_name`, etc.) can be left at their defaults unless you need to change mount paths or names. The `vault_token` is injected securely from the credential — do not add it here.
+   > The remaining variables (`vault_jwt_mount_path`, `vault_jwt_role_name`, `vault_policy_name`, etc.) default to sensible values in `vars.yml`. `VAULT_TOKEN` must be set as an environment variable in the EE — do not add it to Extra Variables.
 
 5. Click **Save**, then **Launch**
 
@@ -142,9 +142,9 @@ Run the HCP Vault Dedicated configuration playbook as an AAP job template. It en
    | **Playbook** | `examples/hcp-vault-config/configure_hcp_vault_oidc.yml` |
    | **Execution Environment** | An EE with `community.hashi_vault >= 6.x` |
 
-3. Under **Credentials**, add a credential of type **HCP Vault Bootstrap Token** containing your HCP service principal token. This credential type is created by Step 2 — run that first.
+3. Under **Credentials**, no credential attachment is needed. The HCP service principal token is supplied via the `VAULT_TOKEN` environment variable set in the execution environment.
 
-4. In the **Extra Variables** field, supply the non-sensitive environment values:
+4. In the **Extra Variables** field, supply the environment-specific values:
 
    ```yaml
    vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
@@ -153,7 +153,7 @@ Run the HCP Vault Dedicated configuration playbook as an AAP job template. It en
    vault_namespace: "admin"
    ```
 
-   > The `vault_token` is injected securely from the credential — do not add it here.
+   > `VAULT_TOKEN` must be set as an environment variable in the EE — do not add it to Extra Variables.
 
 5. Click **Save**, then **Launch**
 

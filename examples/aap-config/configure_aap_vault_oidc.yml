@@ -4,10 +4,11 @@
 # during testing. The endpoint used here is based on AAP 2.7 documentation and may differ
 # depending on the deployment topology (standalone controller vs. platform gateway).
 #
-# NOTE: This playbook uses the built-in AAP platform credential (kind: tower), which injects
-# tower_host, tower_username, tower_password, and tower_verify_ssl at run-time.
-# Attach a "Red Hat Ansible Automation Platform" credential to the job template before
-# launching — do NOT set these values in Extra Variables.
+# Bootstrap credentials are read from environment variables. Set these before running:
+#   export CONTROLLER_HOST="https://<your-aap-host>"
+#   export CONTROLLER_USERNAME="<admin-username>"
+#   export CONTROLLER_PASSWORD="<admin-password>"
+#   export CONTROLLER_VERIFY_SSL="true"   # set to false to skip TLS validation
 #
 # SECURITY: Credentials are passed to each uri task via url_username / url_password with
 # force_basic_auth: true. The uri module declares url_password with no_log=True in its
@@ -26,9 +27,25 @@
     - vars.yml
 
   vars:
-    aap_api_base: "https://{{ tower_host }}"
+    # Bootstrap credentials sourced from environment variables
+    controller_host: "{{ lookup('env', 'CONTROLLER_HOST') }}"
+    controller_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+    controller_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
+    controller_verify_ssl: "{{ lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true) }}"
+    aap_api_base: "{{ controller_host }}"
 
   tasks:
+    - name: Fail if required CONTROLLER_* environment variables are not set
+      ansible.builtin.fail:
+        msg: >-
+          Required environment variable {{ item }} is not set.
+          Export CONTROLLER_HOST, CONTROLLER_USERNAME, and CONTROLLER_PASSWORD before running.
+      when: lookup('env', item) | length == 0
+      loop:
+        - CONTROLLER_HOST
+        - CONTROLLER_USERNAME
+        - CONTROLLER_PASSWORD
+
     # -------------------------------------------------------------------------
     # Task 1 — Enable the AAP OIDC / JWT issuer
     # NOTE: Verify the exact endpoint and setting key against your AAP 2.7 instance.
@@ -40,8 +57,8 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/gateway/v1/settings/"
         method: PATCH
-        url_username: "{{ tower_username }}"
-        url_password: "{{ tower_password }}"
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
@@ -51,7 +68,7 @@
         status_code:
           - 200
           - 204
-        validate_certs: "{{ tower_verify_ssl }}"
+        validate_certs: "{{ controller_verify_ssl }}"
       register: oidc_enable_result
 
     - name: Report OIDC issuer enablement result
@@ -65,8 +82,8 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/v2/credential_types/"
         method: POST
-        url_username: "{{ tower_username }}"
-        url_password: "{{ tower_password }}"
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
@@ -98,157 +115,43 @@
           - 200
           - 201
           - 400
-        validate_certs: "{{ tower_verify_ssl }}"
+        validate_certs: "{{ controller_verify_ssl }}"
       register: credential_type_result
       failed_when:
         - credential_type_result.status == 400
         - "'name already exists' not in (credential_type_result.json | to_json)"
 
+    - name: Look up existing HashiCorp Vault JWT credential type ID (when already exists)
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/api/v2/credential_types/?name=HashiCorp+Vault+JWT"
+        method: GET
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ controller_verify_ssl }}"
+      register: credential_type_lookup
+      when: credential_type_result.status == 400
+
     - name: Capture credential type ID
       ansible.builtin.set_fact:
-        vault_jwt_credential_type_id: "{{ credential_type_result.json.id }}"
+        vault_jwt_credential_type_id: >-
+          {{ credential_type_result.json.id
+             if credential_type_result.status in [200, 201]
+             else credential_type_lookup.json.results[0].id }}
 
-    - name: Report credential type creation
+    - name: Report credential type
       ansible.builtin.debug:
-        msg: "Created credential type 'HashiCorp Vault JWT' with ID {{ vault_jwt_credential_type_id }}"
+        msg: "HashiCorp Vault JWT credential type ID: {{ vault_jwt_credential_type_id }}"
 
     # -------------------------------------------------------------------------
-    # Task 3 — Create the Vault Bootstrap Token credential type
-    # -------------------------------------------------------------------------
-    - name: Create Vault Bootstrap Token credential type
-      ansible.builtin.uri:
-        url: "{{ aap_api_base }}/api/v2/credential_types/"
-        method: POST
-        url_username: "{{ tower_username }}"
-        url_password: "{{ tower_password }}"
-        force_basic_auth: true
-        headers:
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          name: "Vault Bootstrap Token"
-          kind: "cloud"
-          inputs:
-            fields:
-              - id: "vault_token"
-                type: "string"
-                label: "Vault Bootstrap Token"
-                secret: true
-            required:
-              - "vault_token"
-          injectors:
-            extra_vars:
-              vault_token: "{% raw %}{{ vault_token }}{% endraw %}"
-        status_code:
-          - 200
-          - 201
-          - 400
-        validate_certs: "{{ tower_verify_ssl }}"
-      register: vault_bootstrap_token_type_result
-      failed_when:
-        - vault_bootstrap_token_type_result.status == 400
-        - "'name already exists' not in (vault_bootstrap_token_type_result.json | to_json)"
-
-    - name: Report Vault Bootstrap Token credential type creation
-      ansible.builtin.debug:
-        msg: "Created credential type 'Vault Bootstrap Token' (HTTP {{ vault_bootstrap_token_type_result.status }})"
-
-    # -------------------------------------------------------------------------
-    # Task 4 — Create the HCP Vault Bootstrap Token credential type
-    # -------------------------------------------------------------------------
-    - name: Create HCP Vault Bootstrap Token credential type
-      ansible.builtin.uri:
-        url: "{{ aap_api_base }}/api/v2/credential_types/"
-        method: POST
-        url_username: "{{ tower_username }}"
-        url_password: "{{ tower_password }}"
-        force_basic_auth: true
-        headers:
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          name: "HCP Vault Bootstrap Token"
-          kind: "cloud"
-          inputs:
-            fields:
-              - id: "vault_token"
-                type: "string"
-                label: "HCP Service Principal Token"
-                secret: true
-            required:
-              - "vault_token"
-          injectors:
-            extra_vars:
-              vault_token: "{% raw %}{{ vault_token }}{% endraw %}"
-        status_code:
-          - 200
-          - 201
-          - 400
-        validate_certs: "{{ tower_verify_ssl }}"
-      register: hcp_vault_bootstrap_token_type_result
-      failed_when:
-        - hcp_vault_bootstrap_token_type_result.status == 400
-        - "'name already exists' not in (hcp_vault_bootstrap_token_type_result.json | to_json)"
-
-    - name: Report HCP Vault Bootstrap Token credential type creation
-      ansible.builtin.debug:
-        msg: "Created credential type 'HCP Vault Bootstrap Token' (HTTP {{ hcp_vault_bootstrap_token_type_result.status }})"
-
-    # -------------------------------------------------------------------------
-    # Task 5 — Create the AAP Admin Credential type
-    # -------------------------------------------------------------------------
-    - name: Create AAP Admin Credential type
-      ansible.builtin.uri:
-        url: "{{ aap_api_base }}/api/v2/credential_types/"
-        method: POST
-        url_username: "{{ tower_username }}"
-        url_password: "{{ tower_password }}"
-        force_basic_auth: true
-        headers:
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          name: "AAP Admin Credential"
-          kind: "cloud"
-          inputs:
-            fields:
-              - id: "aap_username"
-                type: "string"
-                label: "AAP Admin Username"
-              - id: "aap_password"
-                type: "string"
-                label: "AAP Admin Password"
-                secret: true
-            required:
-              - "aap_username"
-              - "aap_password"
-          injectors:
-            extra_vars:
-              aap_username: "{% raw %}{{ aap_username }}{% endraw %}"
-              aap_password: "{% raw %}{{ aap_password }}{% endraw %}"
-        status_code:
-          - 200
-          - 201
-          - 400
-        validate_certs: "{{ tower_verify_ssl }}"
-      register: aap_admin_credential_type_result
-      failed_when:
-        - aap_admin_credential_type_result.status == 400
-        - "'name already exists' not in (aap_admin_credential_type_result.json | to_json)"
-
-    - name: Report AAP Admin Credential type creation
-      ansible.builtin.debug:
-        msg: "Created credential type 'AAP Admin Credential' (HTTP {{ aap_admin_credential_type_result.status }})"
-
-    # -------------------------------------------------------------------------
-    # Task 6 — Create a credential instance of the HashiCorp Vault JWT type
+    # Task 3 — Create a credential instance of the HashiCorp Vault JWT type
     # -------------------------------------------------------------------------
     - name: Create Vault JWT credential instance
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/v2/credentials/"
         method: POST
-        url_username: "{{ tower_username }}"
-        url_password: "{{ tower_password }}"
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
@@ -263,9 +166,15 @@
         status_code:
           - 200
           - 201
-        validate_certs: "{{ tower_verify_ssl }}"
+          - 400
+        validate_certs: "{{ controller_verify_ssl }}"
       register: credential_result
+      failed_when:
+        - credential_result.status == 400
+        - "'name already exists' not in (credential_result.json | to_json)"
 
-    - name: Report credential instance creation
+    - name: Report credential instance
       ansible.builtin.debug:
-        msg: "Created credential '{{ credential_result.json.name }}' with ID {{ credential_result.json.id }}"
+        msg: >-
+          Vault JWT credential '{{ vault_jwt_role_name }}' ready
+          (HTTP {{ credential_result.status }})

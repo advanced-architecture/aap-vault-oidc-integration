@@ -37,10 +37,10 @@ Edit `vars.yml` before running. All variables are required unless noted.
 
 | Variable | Default | Description |
 |---|---|---|
-| `tower_host` | *(injected)* | AAP Controller hostname — injected by the built-in AAP platform credential; do not set in vars |
-| `tower_username` | *(injected)* | AAP admin username — injected by the built-in AAP platform credential |
-| `tower_password` | *(injected)* | AAP admin password — injected by the built-in AAP platform credential |
-| `tower_verify_ssl` | *(injected)* | TLS validation flag — injected by the built-in AAP platform credential |
+| `CONTROLLER_HOST` | *(env var)* | AAP Controller URL — set via `export CONTROLLER_HOST=...` |
+| `CONTROLLER_USERNAME` | *(env var)* | AAP admin username — set via `export CONTROLLER_USERNAME=...` |
+| `CONTROLLER_PASSWORD` | *(env var)* | AAP admin password — set via `export CONTROLLER_PASSWORD=...` |
+| `CONTROLLER_VERIFY_SSL` | `true` | TLS validation — set to `false` to skip (optional) |
 | `vault_addr` | `https://vault.example.com:8200` | Full Vault server URL (no trailing slash) |
 | `vault_jwt_mount_path` | `jwt` | JWT auth method mount path in Vault |
 | `vault_jwt_role_name` | `aap-automation` | JWT role name in Vault that AAP jobs authenticate against |
@@ -48,31 +48,22 @@ Edit `vars.yml` before running. All variables are required unless noted.
 
 ---
 
-## How to Run as an AAP Job Template
+## How to Run
 
-This is the bootstrap step — run it once before running any other config playbooks. It uses AAP's built-in platform credential so no custom credential type is needed to get started.
+Export your AAP admin credentials as environment variables, then run the playbook:
 
-1. In AAP, go to **Resources → Credentials → Add** and create a credential of type **Red Hat Ansible Automation Platform** with:
-   - **Host:** `https://<your-aap-host>`
-   - **Username:** your AAP admin username
-   - **Password:** your AAP admin password
-   - **Verify SSL:** set appropriately for your environment
-2. Create a job template with:
-   - **Playbook:** `examples/aap-config/configure_aap_vault_oidc.yml`
-   - **Credentials:** attach the **Red Hat Ansible Automation Platform** credential created above
-3. In the job template **Extra Variables** field, supply the non-sensitive values:
-   ```yaml
-   vault_addr: "https://<your-vault-host>:8200"
-   vault_jwt_mount_path: "jwt"
-   vault_jwt_role_name: "aap-automation"
-   ```
-4. Launch the job template. AAP admin credentials are injected securely — they never appear in Extra Variables or the job log.
+```bash
+export CONTROLLER_HOST="https://<your-aap-host>"
+export CONTROLLER_USERNAME="<admin-username>"
+export CONTROLLER_PASSWORD="<admin-password>"
 
-After this job completes, the following credential types will exist in AAP and can be used by the other config playbooks:
-- **Vault Bootstrap Token** — for `examples/vault-config/`
-- **HCP Vault Bootstrap Token** — for `examples/hcp-vault-config/`
-- **HashiCorp Vault JWT** — for the demo playbooks
-- **AAP Admin Credential** — for future re-runs of this playbook without the built-in credential
+ansible-playbook examples/aap-config/configure_aap_vault_oidc.yml \
+  -e vault_addr="https://<your-vault-host>:8200" \
+  -e vault_jwt_mount_path="jwt" \
+  -e vault_jwt_role_name="aap-automation"
+```
+
+After this playbook completes, the **HashiCorp Vault JWT** credential type and a matching credential instance will exist in AAP, ready to be attached to the demo job templates.
 
 ---
 
