@@ -1,14 +1,14 @@
 ---
-# NOTE: The OIDC issuer enablement step (Task 1 below) uses the AAP Gateway settings API.
-# The exact endpoint path and setting key should be verified against the live AAP 2.7 instance
-# during testing. The endpoint used here is based on AAP 2.7 documentation and may differ
-# depending on the deployment topology (standalone controller vs. platform gateway).
-#
 # Bootstrap credentials are read from environment variables. Set these before running:
 #   export CONTROLLER_HOST="https://<your-aap-host>"
 #   export CONTROLLER_USERNAME="<admin-username>"
 #   export CONTROLLER_PASSWORD="<admin-password>"
 #   export CONTROLLER_VERIFY_SSL="true"   # set to false to skip TLS validation
+#
+# NOTE: The AAP OIDC issuer is enabled by default on AAP 2.7 platform-gateway deployments.
+# Verify it is active before running this playbook:
+#   curl -L ${CONTROLLER_HOST}/o/.well-known/openid-configuration/
+# A valid OIDC discovery document confirms the issuer is live. No manual enablement is needed.
 #
 # SECURITY: Credentials are passed to each uri task via url_username / url_password with
 # force_basic_auth: true. The uri module declares url_password with no_log=True in its
@@ -47,36 +47,7 @@
         - CONTROLLER_PASSWORD
 
     # -------------------------------------------------------------------------
-    # Task 1 — Enable the AAP OIDC / JWT issuer
-    # NOTE: Verify the exact endpoint and setting key against your AAP 2.7 instance.
-    # The Gateway settings endpoint below is the expected path for AAP 2.7 deployments
-    # that include the platform gateway component. On standalone controller-only deployments
-    # the endpoint may instead be /api/v2/settings/system/.
-    # -------------------------------------------------------------------------
-    - name: Enable AAP OIDC issuer via Gateway settings API
-      ansible.builtin.uri:
-        url: "{{ aap_api_base }}/api/gateway/v1/settings/"
-        method: PATCH
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
-        force_basic_auth: true
-        headers:
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          ANSIBLE_CONTROLLER_GATEWAY_ENABLED: true
-        status_code:
-          - 200
-          - 204
-        validate_certs: "{{ controller_verify_ssl }}"
-      register: oidc_enable_result
-
-    - name: Report OIDC issuer enablement result
-      ansible.builtin.debug:
-        msg: "OIDC issuer setting applied (HTTP {{ oidc_enable_result.status }})"
-
-    # -------------------------------------------------------------------------
-    # Task 2 — Create the custom credential type for HashiCorp Vault JWT auth
+    # Task 1 — Create the custom credential type for HashiCorp Vault JWT auth
     # -------------------------------------------------------------------------
     - name: Create HashiCorp Vault JWT credential type
       ansible.builtin.uri:
@@ -144,7 +115,7 @@
         msg: "HashiCorp Vault JWT credential type ID: {{ vault_jwt_credential_type_id }}"
 
     # -------------------------------------------------------------------------
-    # Task 3 — Create a credential instance of the HashiCorp Vault JWT type
+    # Task 2 — Create a credential instance of the HashiCorp Vault JWT type
     # -------------------------------------------------------------------------
     - name: Create Vault JWT credential instance
       ansible.builtin.uri:

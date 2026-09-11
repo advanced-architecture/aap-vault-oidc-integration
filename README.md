@@ -78,8 +78,8 @@ sequenceDiagram
 
 | Component | Detail |
 |---|---|
-| **AAP OIDC Issuer URL** | `https://<aap-controller-host>/api/gateway/v1/jwt/` — the `iss` claim in every minted JWT; configure this as `oidc_discovery_url` in Vault |
-| **AAP JWKS Endpoint** | `https://<aap-controller-host>/api/gateway/v1/jwks/` — Vault fetches public keys from this URL to verify JWT signatures |
+| **AAP OIDC Issuer URL** | `https://<aap-controller-host>/o/.well-known/openid-configuration/` — verify the issuer is active before configuring Vault; the `issuer` field in this document is what Vault uses as `oidc_discovery_url` |
+| **AAP JWKS Endpoint** | Published in the OIDC discovery document (`jwks_uri`) — Vault fetches public keys from this URL to verify JWT signatures |
 | **Vault JWT auth mount** | Enabled at a configurable path (default `jwt/`); receives `vault write auth/jwt/login role=<role> jwt=<token>` calls from playbooks |
 | **JWT role — `user_claim`** | Map to `sub` (AAP sets this to the job's identity); used as the Vault entity alias |
 | **JWT role — `bound_claims`** | Restrict which AAP jobs can authenticate: bind on `aud` (audience set to the Vault address) and optionally on AAP-specific claims such as `org`, `project`, or `job_template_id` to enforce least-privilege |
@@ -136,5 +136,8 @@ Step 2 (Configure AAP) is shared between both deployment models — skip it if y
 ## References
 
 - [AAP 2.7 — What's New: OIDC Authentication for HashiCorp Vault](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/whats_new-oidc_authentication_for_hashicorp_vault)
+- [Just-in-time access to HashiCorp Vault using the Red Hat Ansible Automation Platform OIDC provider](https://developers.redhat.com/articles/2026/08/11/just-in-time-access-to-hashicorp-vault-with-ansible-oidc-provider?source=sso#enabling_the_oidc_feature_for_hashicorp_vault)
 - [HashiCorp Vault — JWT/OIDC Auth Method](https://developer.hashicorp.com/vault/docs/auth/jwt)
 - [Ansible `community.hashi_vault` Collection](https://docs.ansible.com/ansible/latest/collections/community/hashi_vault/)
+- [AAP 2.7 Workload Identity: Configure OIDC Credential Types for HashiCorp Vault (Step-by-Step)](https://www.ansiblepilot.com/articles/aap-2-7-workload-identity-oidc-hashicorp-vault-jwt-credential-types-configuration-guide)
+- [Ansible AAP as OIDC Authentication Provider for HashiCorp Vault: Zero Trust Workflow](https://www.ansiblepilot.com/articles/ansible-aap-oidc-authentication-provider-hashicorp-vault-zero-trust-workflow)

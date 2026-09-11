@@ -35,7 +35,13 @@ Before starting, confirm:
 
 ## Step 2 — Configure AAP
 
-Run the AAP configuration playbook as a job template. It enables the OIDC issuer and creates the Vault JWT credential type and credential instance. **This step is shared — run it once regardless of which Vault deployment model you use.**
+Run the AAP configuration playbook as a job template. It creates the Vault JWT credential type and credential instance. **This step is shared — run it once regardless of which Vault deployment model you use.**
+
+> **Before running this step**, verify that the AAP OIDC issuer is active:
+> ```bash
+> curl -L ${CONTROLLER_HOST}/o/.well-known/openid-configuration/
+> ```
+> A valid OIDC discovery document confirms the issuer is live. The playbook does not enable the issuer — it is on by default in AAP 2.7 platform-gateway deployments.
 
 ### Create the Job Template
 
@@ -72,7 +78,6 @@ After the job completes, confirm in the AAP web UI:
 - **Resources → Credential Types** — a type named `HashiCorp Vault JWT` exists
 - **Resources → Credentials** — a credential named `Vault JWT - aap-automation` exists
 
-> ⚠️ **OIDC issuer endpoint.** The playbook calls `PATCH /api/gateway/v1/settings/` to enable the AAP OIDC issuer. This is correct for AAP 2.7 platform-gateway deployments. On standalone controller-only deployments the endpoint may differ — see the [AAP 2.7 OIDC docs](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/whats_new-oidc_authentication_for_hashicorp_vault) and update the task if your job fails here.
 
 ---
 
@@ -106,7 +111,7 @@ Run the Vault configuration playbook as an AAP job template. It enables the JWT 
 
    ```yaml
    vault_addr: "https://<your-vault-host>:8200"
-   aap_oidc_discovery_url: "https://<your-aap-host>/api/gateway/v1/jwt/"
+   aap_oidc_discovery_url: "https://<your-aap-host>/o"
    jwt_bound_audience: "https://<your-vault-host>:8200"
    ```
 
@@ -148,7 +153,7 @@ Run the HCP Vault Dedicated configuration playbook as an AAP job template. It en
 
    ```yaml
    vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
-   aap_oidc_discovery_url: "https://<your-aap-host>/api/gateway/v1/jwt/"
+   aap_oidc_discovery_url: "https://<your-aap-host>/o"
    jwt_bound_audience: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
    vault_namespace: "admin"
    ```
@@ -286,10 +291,9 @@ ok: [localhost] => {
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `AAP_JWT_TOKEN environment variable is not set` | OIDC issuer not enabled, or playbook run locally | Confirm Step 2 completed and the job is running as an AAP job template |
+| `AAP_JWT_TOKEN environment variable is not set` | OIDC issuer not active, or playbook run locally | Run `curl -L ${CONTROLLER_HOST}/o/.well-known/openid-configuration/` to confirm the issuer is live; ensure the job is running as an AAP job template |
 | Vault returns `401 permission denied` on login | `aud` claim mismatch | Confirm `jwt_bound_audience` in the Vault config job's extra vars exactly matches the `vault_addr` value; inspect the raw JWT at [jwt.io](https://jwt.io) |
 | Vault returns `403 permission denied` on secret read | Policy path mismatch | Confirm `vault_secret_path` in the Vault config job's extra vars matches the path the demo playbook reads |
-| Step 2 AAP config playbook fails at the OIDC issuer `PATCH` task | Wrong endpoint for your AAP topology | See the note in Step 2 above |
 | Vault config playbook fails saying mount already exists | JWT auth method was partially configured previously | Run `vault auth disable jwt` and re-run the Vault config job template |
 | HCP Vault returns `403` on any API call | Missing or wrong namespace | Confirm `vault_namespace: admin` is set in the HCP job template extra vars |
 | HCP Vault returns `403` on login despite correct namespace | Service principal token expired or insufficient role | Regenerate the HCP service principal token and confirm it has the Contributor role on the cluster |

@@ -8,8 +8,10 @@ vault_addr: "https://vault.example.com:8200"
 
 # The full OIDC discovery URL of AAP 2.7's built-in OIDC issuer.
 # Vault uses this to fetch the JWKS public keys for JWT validation.
-# Format: https://<aap-controller-host>/api/gateway/v1/jwt/
-aap_oidc_discovery_url: "https://aap.example.com/api/gateway/v1/jwt/"
+# Confirm the issuer URL by running:
+#   curl -L https://<aap-host>/o/.well-known/openid-configuration/
+# Use the value of the 'issuer' field returned in that document.
+aap_oidc_discovery_url: "https://aap.example.com/o"
 
 # The mount path for the JWT auth method in Vault (no leading slash)
 vault_jwt_mount_path: "jwt"

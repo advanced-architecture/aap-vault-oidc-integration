@@ -40,7 +40,7 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 |---|---|---|---|
 | `vault_addr` | Vault server address (no trailing slash) | ✅ | `https://vault.example.com:8200` |
 | `vault_token` | Bootstrap admin token — read from `VAULT_TOKEN` env var | ✅ | *(env var)* |
-| `aap_oidc_discovery_url` | AAP 2.7 OIDC discovery URL (`/api/gateway/v1/jwt/`) | ✅ | `https://aap.example.com/api/gateway/v1/jwt/` |
+| `aap_oidc_discovery_url` | AAP 2.7 OIDC issuer URL — use the `issuer` value from `curl -L <aap-host>/o/.well-known/openid-configuration/` | ✅ | `https://aap.example.com/o` |
 | `vault_jwt_mount_path` | Mount path for the Vault JWT auth method | ✅ | `jwt` |
 | `vault_jwt_role_name` | Name of the JWT role Vault creates for AAP jobs | ✅ | `aap-automation` |
 | `vault_policy_name` | Name of the Vault ACL policy attached to the JWT role | ✅ | `aap-automation-policy` |
@@ -60,7 +60,7 @@ Export your Vault bootstrap credentials as environment variables, then run the p
 export VAULT_TOKEN="<your-vault-admin-token>"
 ansible-playbook examples/vault-config/configure_vault_oidc.yml \
   -e vault_addr="https://<your-vault-host>:8200" \
-  -e aap_oidc_discovery_url="https://<your-aap-host>/api/gateway/v1/jwt/" \
+  -e aap_oidc_discovery_url="$(curl -sL ${CONTROLLER_HOST}/o/.well-known/openid-configuration/ | python3 -c 'import sys,json; print(json.load(sys.stdin)["issuer"])')" \
   -e jwt_bound_audience="https://<your-vault-host>:8200"
 ```
 

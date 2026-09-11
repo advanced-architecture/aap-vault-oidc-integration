@@ -83,10 +83,10 @@ sequenceDiagram
 
 | Connection point | Value / rule |
 |---|---|
-| AAP OIDC discovery URL | `https://<aap-controller-host>/api/gateway/v1/jwt/` |
+| AAP OIDC discovery URL | `https://<aap-controller-host>/o` — confirmed via `curl -L <host>/o/.well-known/openid-configuration/`; use the `issuer` field value |
 | AAP JWKS endpoint | `https://<aap-controller-host>/api/gateway/v1/jwks/` |
 | JWT injected env var | `AAP_JWT_TOKEN` (confirm name against live AAP instance) |
-| Vault JWT config `oidc_discovery_url` | AAP `/api/gateway/v1/jwt/` endpoint |
+| Vault JWT config `oidc_discovery_url` | AAP `issuer` value from `/o/.well-known/openid-configuration/` (typically `https://<aap-host>/o`) |
 | Vault JWT role `bound_audiences` | Must **exactly match** `vault_addr` (HCP URL includes port `8200`) |
 | Vault JWT role `user_claim` | `sub` |
 | HCP Vault namespace | `admin` on all API calls |
@@ -131,7 +131,7 @@ sequenceDiagram
 
 **Todo List:**
 1. Confirm `FEATURE_OIDC_WORKLOAD_IDENTITY_ENABLED` is set on the AAP instance.
-2. Confirm OIDC discovery endpoint responds: `curl -s https://<aap-host>/api/gateway/v1/jwt/`.
+2. Confirm OIDC issuer is active: `curl -L https://<aap-host>/o/.well-known/openid-configuration/` — should return a valid OIDC discovery document.
 3. Run Step 1: add repo as AAP Project.
 4. Run Step 2: run `configure_aap_vault_oidc.yml` job template; verify credential types created.
 5. Run Step 3A (self-managed) or 3B (HCP): run Vault config job template; verify JWT auth, policy, role, secret.
