@@ -105,13 +105,15 @@ sequenceDiagram
 **Status:** `[x] completed`
 
 **What was built:**
-- `examples/aap-config/` — OIDC issuer enablement + 4 custom credential types + credential instance
-- `examples/vault-config/` — self-managed Vault JWT auth, policy, role, demo secret
-- `examples/hcp-vault-config/` — HCP Vault Dedicated variant with namespace headers
+- `examples/aap-config/` — OIDC issuer enablement + HashiCorp Vault JWT credential type + credential instance; bootstrap credentials via `CONTROLLER_*` env vars
+- `examples/vault-config/` — self-managed Vault JWT auth, policy, role, demo secret; bootstrap via `VAULT_TOKEN` env var
+- `examples/hcp-vault-config/` — HCP Vault Dedicated variant with namespace headers; bootstrap via `VAULT_TOKEN` env var
 - `examples/demo-playbook/` — end-to-end self-managed demo
 - `examples/hcp-demo-playbook/` — end-to-end HCP demo
 - `README.md` — SCQA narrative, mermaid diagrams, integration highlights table
 - `demo.md` — step-by-step AAP UI walkthrough, expected output, troubleshooting table
+
+**Refactor (2026-09-11):** Bootstrap credentials switched from AAP custom credential type injection to environment variables (`VAULT_TOKEN`, `CONTROLLER_HOST/USERNAME/PASSWORD/VERIFY_SSL`). Three bootstrap credential types (Vault Bootstrap Token, HCP Vault Bootstrap Token, AAP Admin Credential) removed from `configure_aap_vault_oidc.yml`. All READMEs and `demo.md` updated to document `export` commands.
 
 ---
 
