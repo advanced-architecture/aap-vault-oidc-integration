@@ -7,10 +7,27 @@ This example configures Ansible Automation Platform (AAP) 2.7 to support secretl
 ## Prerequisites
 
 - **Ansible** 2.14 or later installed on the machine running this playbook.
-- **AAP 2.7** instance with admin access. The admin account credentials are required to call the AAP REST API.
+- **AAP 2.7** instance with an account having the required permissions (see [Bootstrap Credential Permissions](#bootstrap-credential-permissions) below).
 - No additional Ansible collections are required — all tasks use the `ansible.builtin.uri` module from Ansible core.
   > If you prefer a declarative approach using the `ansible.controller` (formerly `awx.awx`) collection, the collection can be installed with `ansible-galaxy collection install ansible.controller`. The playbook as written uses `uri` tasks for portability, so the collection is optional.
 - Network reachability from the machine running this playbook to the AAP API (`https://<aap_host>`).
+
+---
+
+## Bootstrap Credential Permissions
+
+The bootstrap playbook (`configure_aap_vault_oidc.yml`) executes three administrative operations via the AAP REST API. To adhere to the principle of least privilege, the user account or service account associated with the bootstrap credential needs only the following minimum-necessary permissions:
+
+| Operation / Task | Endpoint & HTTP Method | Minimum AAP Role / Permission Required | Purpose |
+|---|---|---|---|
+| **Enable OIDC Issuer** | `PATCH /api/gateway/v1/settings/` (or `PATCH /api/v2/settings/system/`) | **System Administrator** (`is_superuser: true` / Platform Gateway Settings Administrator) | Modifies global platform gateway / system settings to enable per-job JWT issuance. |
+| **Create / Look up Credential Type** | `POST /api/v2/credential_types/`<br>`GET /api/v2/credential_types/` | **System Administrator** (`is_superuser: true`) | Defines the custom `HashiCorp Vault JWT` credential type, its schema inputs, and injectors. |
+| **Create Credential Instance** | `POST /api/v2/credentials/` | **System Administrator** (or **Credential Admin** / **Organization Admin** for the target Organization) | Instantiates the `Vault JWT - <role_name>` credential record referencing the custom credential type. |
+
+### Minimum Role Summary
+
+- **System Administrator (Superuser):** Required during the initial bootstrap run because modifying system/gateway settings and creating global custom credential types are privileged platform-level operations in AAP.
+- **Dedicated Service Account Recommendation:** In production environments, create a dedicated bootstrap service account (e.g., `sa-aap-vault-bootstrap`) assigned Superuser permissions solely for running bootstrap configuration playbooks, rather than using personal or interactive administrator credentials.
 
 ---
 

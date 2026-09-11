@@ -26,7 +26,7 @@ AAP 2.7's built-in OIDC issuer mints a short-lived, cryptographically signed JWT
 
 ## Prerequisites
 
-- **Ansible Automation Platform 2.7+** (self-managed; provides the built-in OIDC issuer)
+- **Ansible Automation Platform 2.7+** (self-managed; provides the built-in OIDC issuer). For the bootstrap configuration, see [AAP Bootstrap Credential Permissions](examples/aap-config/README.md#bootstrap-credential-permissions).
 - **HashiCorp Vault 1.9+** (self-managed; uses the native JWT/OIDC auth method)
 - **Or, for HCP Vault Dedicated:** an HCP account, an HCP Vault Dedicated cluster, and an HCP service principal with the Contributor role on the cluster
 - **`community.hashi_vault` collection >= 6.x** (provides `vault_login`, `vault_read`, and related modules)
@@ -115,7 +115,7 @@ See the HCP Vault Dedicated example playbooks:
 1. **Configure Vault** — enable the JWT auth method, create the role, and seed the demo secret:
    see [`examples/vault-config/`](examples/vault-config/)
 
-2. **Configure AAP** — enable the OIDC issuer and set up the Vault credential type in AAP:
+2. **Configure AAP** — enable the OIDC issuer and set up the Vault credential type in AAP (review required [bootstrap permissions](examples/aap-config/README.md#bootstrap-credential-permissions)):
    see [`examples/aap-config/`](examples/aap-config/)
 
 3. **Run the demo** — import and execute the end-to-end demonstration playbook as an AAP job template:
