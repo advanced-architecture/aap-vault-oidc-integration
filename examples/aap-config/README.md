@@ -24,9 +24,93 @@ The AAP Cluster must have the OIDC Feature Flag turned on. This feature flag is 
     FEATURE_OIDC_WORKLOAD_IDENTITY_ENABLED: True
 ```
 
-
-
 Extra helpful reading: [Just in Time Access to HashiCorp Vault](https://developers.redhat.com/articles/2026/08/11/just-in-time-access-to-hashicorp-vault-with-ansible-oidc-provider?source=sso#configure_ansible_access)
+
+You can confirm the feature is turned on with this check:
+
+% curl -sk -u "${CONTROLLER_USERNAME}:${CONTROLLER_PASSWORD}" \
+  "${CONTROLLER_HOST}/o/.well-known/openid-configuration/" | python3 -m json.tool
+
+Which will return something like the following result, if it is successful.
+
+``` json
+{
+    "issuer": "https://controller_url/o",
+    "authorization_endpoint": "https://controller_url/o/authorize/",
+    "token_endpoint": "https://controller_url/o/token/",
+    "userinfo_endpoint": "https://controller_url/o/userinfo/",
+    "jwks_uri": "https://controller_url/o/.well-known/jwks.json",
+    "scopes_supported": [
+        "read",
+        "write",
+        "aap_controller_automation_job",
+        "openid",
+        "roles"
+    ],
+    "response_types_supported": [
+        "code",
+        "token",
+        "id_token",
+        "id_token token",
+        "code token",
+        "code id_token",
+        "code id_token token"
+    ],
+    "subject_types_supported": [
+        "public"
+    ],
+    "id_token_signing_alg_values_supported": [
+        "RS256",
+        "HS256"
+    ],
+    "token_endpoint_auth_methods_supported": [
+        "client_secret_post",
+        "client_secret_basic"
+    ],
+    "claims_supported": [
+        "aap_controller_launched_by_id",
+        "aap_controller_organization_name",
+        "exp",
+        "aap_controller_project_id",
+        "given_name",
+        "aap_controller_organization_id",
+        "aap_controller_job_template_name",
+        "sub",
+        "aap_controller_instance_group_name",
+        "name",
+        "aud",
+        "preferred_username",
+        "aap_controller_inventory_name",
+        "aap_controller_launch_type",
+        "aap_controller_instance_group_id",
+        "aap_controller_unified_job_template_id",
+        "aap_controller_execution_environment_name",
+        "aap_controller_job_template_id",
+        "aap_controller_job_id",
+        "jti",
+        "email",
+        "aap_system_role",
+        "aap_controller_job_type",
+        "aap_controller_inventory_id",
+        "aap_controller_unified_job_template_name",
+        "aap_organizations",
+        "iss",
+        "aap_controller_execution_environment_id",
+        "aap_controller_job_name",
+        "aap_controller_playbook_name",
+        "aap_controller_project_name",
+        "aap_teams",
+        "iat",
+        "family_name",
+        "aap_controller_launched_by_name"
+    ],
+    "end_session_endpoint": "https://controller_url/o/logout/",
+    "revocation_endpoint": "https://controller_url/o/revoke_token/",
+    "code_challenge_methods_supported": [
+        "S256",
+        "plain"
+    ]
+```
 
 ## Bootstrap Credential Permissions
 
