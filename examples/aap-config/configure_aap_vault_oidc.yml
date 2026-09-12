@@ -89,6 +89,10 @@
         - credential_type_result.status == 400
         - "'name already exists' not in (credential_type_result.json | to_json)"
 
+    - name: Print the credential result
+      ansible.builtin.debug:
+        var: credential_type_result
+
     - name: Look up HashiCorp Vault JWT credential type ID
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/v2/credential_types/?name=HashiCorp+Vault+JWT"
