@@ -30,6 +30,8 @@
     # controller_host, controller_username, controller_password, controller_verify_ssl
     # are all supplied as extra vars by the credential injector — no defaults needed here.
     aap_api_base: "{{ controller_host }}/api/controller"
+    # Organization that will own the credential instance
+    aap_organization: "Default"
 
   tasks:
     - name: Fail if required controller credentials are not set
@@ -114,6 +116,20 @@
     # -------------------------------------------------------------------------
     # Task 2 — Create a credential instance of the HashiCorp Vault JWT type
     # -------------------------------------------------------------------------
+    - name: Look up organization ID
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/organizations/?name={{ aap_organization | urlencode }}"
+        method: GET
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ controller_verify_ssl }}"
+      register: org_lookup
+
+    - name: Capture organization ID
+      ansible.builtin.set_fact:
+        aap_organization_id: "{{ org_lookup.json.results[0].id }}"
+
     - name: Create Vault JWT credential instance
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/credentials/"
@@ -127,6 +143,7 @@
         body:
           name: "Vault JWT - {{ vault_jwt_role_name }}"
           credential_type: "{{ vault_jwt_credential_type_id }}"
+          organization: "{{ aap_organization_id }}"
           inputs:
             vault_addr: "{{ vault_addr }}"
             vault_jwt_mount: "{{ vault_jwt_mount_path }}"
