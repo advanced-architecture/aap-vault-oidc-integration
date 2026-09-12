@@ -58,7 +58,6 @@
         body_format: json
         body:
           name: "HashiCorp Vault JWT"
-          kind: "cloud"
           inputs:
             fields:
               - id: "vault_addr"
@@ -82,11 +81,11 @@
         status_code:
           - 200
           - 201
-          - 400
+        #  - 400
         validate_certs: "{{ controller_verify_ssl }}"
       register: credential_type_result
       failed_when:
-        - credential_type_result.status == 400
+      #  - credential_type_result.status == 400
         - "'name already exists' not in (credential_type_result.json | to_json)"
 
     - name: Print the credential result
