@@ -105,6 +105,25 @@
           role_type: "jwt"
         status_code: [200, 204]
 
+    - name: Enable KV v2 secrets engine
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/sys/mounts/{{ vault_kv_mount }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          X-Vault-Namespace: "{{ vault_namespace }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          type: "kv"
+          options:
+            version: "2"
+        status_code: [200, 204, 400]
+      register: enable_kv_result
+      failed_when:
+        - enable_kv_result.status == 400
+        - "'path is already in use' not in (enable_kv_result.json.errors | default([]) | join(' '))"
+
     - name: Write sample secret to KV v2 for demo playbook
       ansible.builtin.uri:
         url: "{{ vault_addr }}/v1/{{ vault_kv_mount }}/data/{{ vault_kv_secret_path }}"
