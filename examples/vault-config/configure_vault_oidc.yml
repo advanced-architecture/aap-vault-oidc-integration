@@ -85,11 +85,15 @@
         status_code: [200, 204]
 
     - name: Write sample secret to KV v2 for demo playbook
-      community.hashi_vault.vault_kv2_write:
-        url: "{{ vault_addr }}"
-        token: "{{ vault_token }}"
-        engine_mount_point: "{{ vault_kv_mount }}"
-        path: "{{ vault_kv_secret_path }}"
-        data:
-          username: "demo-user"
-          password: "demo-secret-value"
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ vault_kv_mount }}/data/{{ vault_kv_secret_path }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          data:
+            username: "demo-user"
+            password: "demo-secret-value"
+        status_code: [200, 204]
