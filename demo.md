@@ -284,5 +284,6 @@ ok: [localhost] => {
 | Vault returns `401 permission denied` on login | `aud` claim mismatch | Confirm `jwt_bound_audience` in the Vault config job's extra vars exactly matches the `vault_addr` value; inspect the raw JWT at [jwt.io](https://jwt.io) |
 | Vault returns `403 permission denied` on secret read | Policy path mismatch | Confirm `vault_secret_path` in the Vault config job's extra vars matches the path the demo playbook reads |
 | Vault config playbook fails saying mount already exists | JWT auth method was partially configured previously | Run `vault auth disable jwt` and re-run the Vault config job template |
+| `configure_aap_vault_oidc.yml` needs to update an existing credential type schema | AAP does not update in place on POST | Delete the existing `HashiCorp Vault JWT` credential type and any credentials using it in AAP, then re-run the playbook |
 | HCP Vault returns `403` on any API call | Missing or wrong namespace | Confirm `vault_namespace: admin` is set in the HCP job template extra vars |
 | HCP Vault returns `403` on login despite correct namespace | Service principal token expired or insufficient role | Regenerate the HCP service principal token and confirm it has the Contributor role on the cluster |
