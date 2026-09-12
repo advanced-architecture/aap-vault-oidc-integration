@@ -89,7 +89,7 @@
         - credential_type_result.status == 400
         - "'name already exists' not in (credential_type_result.json | to_json)"
 
-    - name: Look up existing HashiCorp Vault JWT credential type ID (when already exists)
+    - name: Look up HashiCorp Vault JWT credential type ID
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/api/v2/credential_types/?name=HashiCorp+Vault+JWT"
         method: GET
@@ -98,17 +98,10 @@
         force_basic_auth: true
         validate_certs: "{{ controller_verify_ssl }}"
       register: credential_type_lookup
-      when: credential_type_result.status == 400
 
-    - name: Capture credential type ID from create response
-      ansible.builtin.set_fact:
-        vault_jwt_credential_type_id: "{{ credential_type_result.json.id }}"
-      when: credential_type_result.status in [200, 201]
-
-    - name: Capture credential type ID from lookup response
+    - name: Capture credential type ID
       ansible.builtin.set_fact:
         vault_jwt_credential_type_id: "{{ credential_type_lookup.json.results[0].id }}"
-      when: credential_type_result.status == 400
 
     - name: Report credential type
       ansible.builtin.debug:
