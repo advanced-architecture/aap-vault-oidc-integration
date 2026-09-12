@@ -195,11 +195,7 @@ Run the demo playbook as an AAP job template. It uses the AAP-injected JWT token
    | **Execution Environment** | An EE with `community.hashi_vault >= 6.x` |
    | **Credentials** | Add `Vault JWT - aap-automation` (type: *HashiCorp Vault JWT*) |
 
-3. In the **Extra Variables** field (only if your values differ from the defaults in `vars.yml`):
-
-   ```yaml
-   vault_addr: "https://<your-vault-host>:8200"
-   ```
+3. No extra variables needed — `vault_addr` is injected by the `Vault JWT - aap-automation` credential.
 
 4. Click **Save**, then **Launch**
 
@@ -249,12 +245,7 @@ Run the HCP demo playbook as an AAP job template. It uses the AAP-injected JWT t
    | **Execution Environment** | An EE with `community.hashi_vault >= 6.x` |
    | **Credentials** | Add `Vault JWT - aap-automation` (type: *HashiCorp Vault JWT*) |
 
-3. In the **Extra Variables** field:
-
-   ```yaml
-   vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
-   vault_namespace: "admin"
-   ```
+3. No extra variables needed — `vault_addr` and `vault_namespace` are injected by the `Vault JWT - aap-automation` credential.
 
 4. Click **Save**, then **Launch**
 

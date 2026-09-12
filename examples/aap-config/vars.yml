@@ -11,5 +11,8 @@ vault_jwt_mount_path: "jwt"
 # The JWT role name in Vault that AAP jobs will authenticate against
 vault_jwt_role_name: "aap-automation"
 
+# Vault namespace — set to 'admin' for HCP Vault Dedicated; leave empty for self-managed Vault
+vault_namespace: ""
+
 # The KV path that the demo playbook will read (used in job template extra_vars)
 vault_secret_path: "secret/data/aap-demo/config"

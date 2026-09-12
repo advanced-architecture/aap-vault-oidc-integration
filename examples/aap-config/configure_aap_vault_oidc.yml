@@ -72,6 +72,9 @@
               - id: "vault_role"
                 type: "string"
                 label: "JWT Role Name"
+              - id: "vault_namespace"
+                type: "string"
+                label: "Vault Namespace (leave blank for self-managed Vault)"
             required:
               - "vault_addr"
               - "vault_jwt_mount"
@@ -81,6 +84,7 @@
               vault_addr: "{% raw %}{{ vault_addr }}{% endraw %}"
               vault_jwt_mount: "{% raw %}{{ vault_jwt_mount }}{% endraw %}"
               vault_role: "{% raw %}{{ vault_role }}{% endraw %}"
+              vault_namespace: "{% raw %}{{ vault_namespace }}{% endraw %}"
         status_code:
           - 200
           - 201
@@ -148,6 +152,7 @@
             vault_addr: "{{ vault_addr }}"
             vault_jwt_mount: "{{ vault_jwt_mount_path }}"
             vault_role: "{{ vault_jwt_role_name }}"
+            vault_namespace: "{{ vault_namespace | default('') }}"
         status_code:
           - 200
           - 201
