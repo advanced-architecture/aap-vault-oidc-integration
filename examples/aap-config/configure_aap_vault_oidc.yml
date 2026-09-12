@@ -156,7 +156,7 @@
       register: credential_result
       failed_when:
         - credential_result.status == 400
-        - "'name already exists' not in (credential_result.json | to_json)"
+        - "'already exists' not in (credential_result.json | to_json)"
 
     - name: Report credential instance
       ansible.builtin.debug:
