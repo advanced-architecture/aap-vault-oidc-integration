@@ -29,7 +29,7 @@
     # Bootstrap credentials injected by the AAP Admin Credential (custom credential type)
     # controller_host, controller_username, controller_password, controller_verify_ssl
     # are all supplied as extra vars by the credential injector — no defaults needed here.
-    aap_api_base: "{{ controller_host }}"
+    aap_api_base: "{{ controller_host }}/api/controller"
 
   tasks:
     - name: Fail if required controller credentials are not set
@@ -48,7 +48,7 @@
     # -------------------------------------------------------------------------
     - name: Create HashiCorp Vault JWT credential type
       ansible.builtin.uri:
-        url: "{{ aap_api_base }}/api/v2/credential_types/"
+        url: "{{ aap_api_base }}/v2/credential_types/"
         method: POST
         url_username: "{{ controller_username }}"
         url_password: "{{ controller_password }}"
@@ -84,9 +84,9 @@
         #  - 400
         validate_certs: "{{ controller_verify_ssl }}"
       register: credential_type_result
-      failed_when:
+      #failed_when:
       #  - credential_type_result.status == 400
-        - "'name already exists' not in (credential_type_result.json | to_json)"
+      #  - "'name already exists' not in (credential_type_result.json | to_json)"
 
     - name: Print the credential result
       ansible.builtin.debug:
@@ -94,7 +94,7 @@
 
     - name: Look up HashiCorp Vault JWT credential type ID
       ansible.builtin.uri:
-        url: "{{ aap_api_base }}/api/v2/credential_types/?name=HashiCorp+Vault+JWT"
+        url: "{{ aap_api_base }}/v2/credential_types/?name=HashiCorp+Vault+JWT"
         method: GET
         url_username: "{{ controller_username }}"
         url_password: "{{ controller_password }}"
@@ -115,7 +115,7 @@
     # -------------------------------------------------------------------------
     - name: Create Vault JWT credential instance
       ansible.builtin.uri:
-        url: "{{ aap_api_base }}/api/v2/credentials/"
+        url: "{{ aap_api_base }}/v2/credentials/"
         method: POST
         url_username: "{{ controller_username }}"
         url_password: "{{ controller_password }}"
