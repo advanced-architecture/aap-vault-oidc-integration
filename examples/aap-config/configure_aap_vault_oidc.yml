@@ -1,13 +1,12 @@
 ---
-# Bootstrap credentials are read from environment variables. Set these before running:
-#   export CONTROLLER_HOST="https://<your-aap-host>"
-#   export CONTROLLER_USERNAME="<admin-username>"
-#   export CONTROLLER_PASSWORD="<admin-password>"
-#   export CONTROLLER_VERIFY_SSL="true"   # set to false to skip TLS validation
+# Bootstrap credentials are injected by the AAP Admin Credential attached to this job template.
+# Create a custom credential type with the following injector extra_vars:
+#   controller_host, controller_username, controller_password, controller_verify_ssl
+# Then create a credential instance of that type and attach it to this job template.
 #
 # NOTE: The AAP OIDC issuer is enabled by default on AAP 2.7 platform-gateway deployments.
 # Verify it is active before running this playbook:
-#   curl -L ${CONTROLLER_HOST}/o/.well-known/openid-configuration/
+#   curl -L <controller_host>/o/.well-known/openid-configuration/
 # A valid OIDC discovery document confirms the issuer is live. No manual enablement is needed.
 #
 # SECURITY: Credentials are passed to each uri task via url_username / url_password with
@@ -27,24 +26,22 @@
     - vars.yml
 
   vars:
-    # Bootstrap credentials sourced from environment variables
-    controller_host: "{{ lookup('env', 'CONTROLLER_HOST') }}"
-    controller_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
-    controller_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
-    controller_verify_ssl: "{{ lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true) }}"
+    # Bootstrap credentials injected by the AAP Admin Credential (custom credential type)
+    # controller_host, controller_username, controller_password, controller_verify_ssl
+    # are all supplied as extra vars by the credential injector — no defaults needed here.
     aap_api_base: "{{ controller_host }}"
 
   tasks:
-    - name: Fail if required CONTROLLER_* environment variables are not set
+    - name: Fail if required controller credentials are not set
       ansible.builtin.fail:
         msg: >-
-          Required environment variable {{ item }} is not set.
-          Export CONTROLLER_HOST, CONTROLLER_USERNAME, and CONTROLLER_PASSWORD before running.
-      when: lookup('env', item) | length == 0
+          Required variable '{{ item }}' is not set.
+          Attach the AAP Admin Credential to this job template.
+      when: (vars[item] is not defined) or (vars[item] | length == 0)
       loop:
-        - CONTROLLER_HOST
-        - CONTROLLER_USERNAME
-        - CONTROLLER_PASSWORD
+        - controller_host
+        - controller_username
+        - controller_password
 
     # -------------------------------------------------------------------------
     # Task 1 — Create the custom credential type for HashiCorp Vault JWT auth

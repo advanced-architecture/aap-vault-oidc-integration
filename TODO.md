@@ -7,7 +7,7 @@ When a task is picked up for implementation, move it into `.github/.agents/plan.
 
 ## Open tasks
 
-- [ ] **fix-bobignore** — manually add `*.env` to `.bobignore` to block local secret files from Bob's context. Bob cannot edit this file itself (self-protected). One line: `*.env        # local secret files — keep out of Bob context`
+- [x] **fix-bobignore** — manually add `*.env` to `.bobignore` to block local secret files from Bob's context. Bob cannot edit this file itself (self-protected). One line: `*.env        # local secret files — keep out of Bob context`
 
 ---
 

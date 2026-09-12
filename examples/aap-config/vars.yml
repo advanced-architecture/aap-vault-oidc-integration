@@ -1,10 +1,6 @@
 ---
-# AAP admin credentials are read from environment variables at run-time.
-# Export these before running this playbook:
-#   export CONTROLLER_HOST="https://<your-aap-host>"
-#   export CONTROLLER_USERNAME="<admin-username>"
-#   export CONTROLLER_PASSWORD="<admin-password>"
-#   export CONTROLLER_VERIFY_SSL="true"   # set to false to skip TLS validation (optional)
+# AAP admin credentials are injected by the AAP Admin Credential attached to this job template.
+# See README.md for how to create the custom credential type and credential instance.
 
 # Address of the Vault server (no trailing slash) — stored in the AAP credential
 vault_addr: "https://vault.example.com:8200"

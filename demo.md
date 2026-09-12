@@ -57,17 +57,15 @@ Run the AAP configuration playbook as a job template. It creates the Vault JWT c
    | **Playbook** | `examples/aap-config/configure_aap_vault_oidc.yml` |
    | **Execution Environment** | Default EE (no extra collections required) |
 
-3. Under **Credentials**, no credential attachment is needed. AAP admin credentials are supplied via environment variables set in the execution environment before launch.
+3. Under **Credentials**, attach the `AAP Admin Credential` instance (type: *AAP Admin Credential*). This injects `controller_host`, `controller_username`, `controller_password`, and `controller_verify_ssl` as extra vars.
 
-4. In the **Extra Variables** field, supply the required values:
+4. In the **Extra Variables** field, supply the Vault connection values:
 
    ```yaml
    vault_addr: "https://<your-vault-host>:8200"
    vault_jwt_mount_path: "jwt"
    vault_jwt_role_name: "aap-automation"
    ```
-
-   > AAP admin credentials (`CONTROLLER_HOST`, `CONTROLLER_USERNAME`, `CONTROLLER_PASSWORD`) must be set as environment variables in the execution environment before launching this job template.
 
 5. Click **Save**, then **Launch**
 

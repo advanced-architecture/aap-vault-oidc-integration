@@ -6,11 +6,9 @@ This example configures Ansible Automation Platform (AAP) 2.7 to support secretl
 
 ## Prerequisites
 
-- **Ansible** 2.14 or later installed on the machine running this playbook.
 - **AAP 2.7** instance with an account having the required permissions (see [Bootstrap Credential Permissions](#bootstrap-credential-permissions) below).
 - No additional Ansible collections are required — all tasks use the `ansible.builtin.uri` module from Ansible core.
-  > If you prefer a declarative approach using the `ansible.controller` (formerly `awx.awx`) collection, the collection can be installed with `ansible-galaxy collection install ansible.controller`. The playbook as written uses `uri` tasks for portability, so the collection is optional.
-- Network reachability from the machine running this playbook to the AAP API (`https://<aap_host>`).
+- An **AAP Admin Credential** (custom credential type) created and attached to this job template — see [Bootstrap Credential Setup](#bootstrap-credential-setup) below.
 - The feature flag for OIDC Authentication must be turned on (see [Enable OIDC Feature Flag](#enable-oidc-feature-flag) below).
 
 ---
@@ -128,16 +126,79 @@ The bootstrap playbook (`configure_aap_vault_oidc.yml`) executes two administrat
 
 ---
 
+## Bootstrap Credential Setup
+
+The playbook reads AAP admin credentials from extra vars injected by a custom AAP credential type. Create this once before running the job template.
+
+### 1 — Create the custom credential type
+
+In AAP → **Resources → Credential Types → Add**:
+
+| Field | Value |
+|---|---|
+| **Name** | `AAP Admin Credential` |
+| **Kind** | `Cloud` |
+
+**Input Configuration:**
+```yaml
+fields:
+  - id: controller_host
+    type: string
+    label: Controller Host URL
+  - id: controller_username
+    type: string
+    label: Controller Username
+  - id: controller_password
+    type: string
+    label: Controller Password
+    secret: true
+  - id: controller_verify_ssl
+    type: boolean
+    label: Verify SSL
+required:
+  - controller_host
+  - controller_username
+  - controller_password
+```
+
+**Injector Configuration:**
+```yaml
+extra_vars:
+  controller_host: '{{ controller_host }}'
+  controller_username: '{{ controller_username }}'
+  controller_password: '{{ controller_password }}'
+  controller_verify_ssl: '{{ controller_verify_ssl }}'
+```
+
+### 2 — Create a credential instance
+
+In AAP → **Resources → Credentials → Add**:
+
+| Field | Value |
+|---|---|
+| **Name** | `AAP Admin - <your-instance-name>` |
+| **Credential Type** | `AAP Admin Credential` |
+| **Controller Host URL** | `https://<your-aap-host>` |
+| **Controller Username** | your AAP admin username |
+| **Controller Password** | your AAP admin password |
+| **Verify SSL** | checked (uncheck only to skip TLS validation) |
+
+### 3 — Attach to the job template
+
+When creating the job template for `configure_aap_vault_oidc.yml`, add this credential under **Credentials**.
+
+---
+
 ## Variables
 
 Edit `vars.yml` before running. All variables are required unless noted.
 
 | Variable | Default | Description |
 |---|---|---|
-| `CONTROLLER_HOST` | *(env var)* | AAP Controller URL — set via `export CONTROLLER_HOST=...` |
-| `CONTROLLER_USERNAME` | *(env var)* | AAP admin username — set via `export CONTROLLER_USERNAME=...` |
-| `CONTROLLER_PASSWORD` | *(env var)* | AAP admin password — set via `export CONTROLLER_PASSWORD=...` |
-| `CONTROLLER_VERIFY_SSL` | `true` | TLS validation — set to `false` to skip (optional) |
+| `controller_host` | *(credential injector)* | AAP Controller URL — injected by AAP Admin Credential |
+| `controller_username` | *(credential injector)* | AAP admin username — injected by AAP Admin Credential |
+| `controller_password` | *(credential injector)* | AAP admin password — injected by AAP Admin Credential |
+| `controller_verify_ssl` | *(credential injector)* | TLS validation flag — injected by AAP Admin Credential |
 | `vault_addr` | `https://vault.example.com:8200` | Full Vault server URL (no trailing slash) |
 | `vault_jwt_mount_path` | `jwt` | JWT auth method mount path in Vault |
 | `vault_jwt_role_name` | `aap-automation` | JWT role name in Vault that AAP jobs authenticate against |
@@ -147,17 +208,12 @@ Edit `vars.yml` before running. All variables are required unless noted.
 
 ## How to Run
 
-Export your AAP admin credentials as environment variables, then run the playbook:
+Create the job template in AAP with the `AAP Admin Credential` attached, supply the Vault extra vars, and launch:
 
-```bash
-export CONTROLLER_HOST="https://<your-aap-host>"
-export CONTROLLER_USERNAME="<admin-username>"
-export CONTROLLER_PASSWORD="<admin-password>"
-
-ansible-playbook examples/aap-config/configure_aap_vault_oidc.yml \
-  -e vault_addr="https://<your-vault-host>:8200" \
-  -e vault_jwt_mount_path="jwt" \
-  -e vault_jwt_role_name="aap-automation"
+```yaml
+vault_addr: "https://<your-vault-host>:8200"
+vault_jwt_mount_path: "jwt"
+vault_jwt_role_name: "aap-automation"
 ```
 
 After this playbook completes, the **HashiCorp Vault JWT** credential type and a matching credential instance will exist in AAP, ready to be attached to the demo job templates.
