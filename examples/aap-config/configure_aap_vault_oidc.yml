@@ -100,12 +100,15 @@
       register: credential_type_lookup
       when: credential_type_result.status == 400
 
-    - name: Capture credential type ID
+    - name: Capture credential type ID from create response
       ansible.builtin.set_fact:
-        vault_jwt_credential_type_id: >-
-          {{ credential_type_result.json.id
-             if credential_type_result.status in [200, 201]
-             else credential_type_lookup.json.results[0].id }}
+        vault_jwt_credential_type_id: "{{ credential_type_result.json.id }}"
+      when: credential_type_result.status in [200, 201]
+
+    - name: Capture credential type ID from lookup response
+      ansible.builtin.set_fact:
+        vault_jwt_credential_type_id: "{{ credential_type_lookup.json.results[0].id }}"
+      when: credential_type_result.status == 400
 
     - name: Report credential type
       ansible.builtin.debug:
