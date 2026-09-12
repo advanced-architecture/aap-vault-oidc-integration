@@ -2,9 +2,8 @@
 # Address of the Vault server (no trailing slash)
 vault_addr: "https://vault.example.com:8200"
 
-# vault_token is read from the VAULT_TOKEN environment variable at run-time.
-# Export it before running this playbook:
-#   export VAULT_TOKEN="<your-vault-admin-token>"
+# vault_token is injected by the Vault Bootstrap Token credential attached to this job template.
+# See README.md for how to create the custom credential type and credential instance.
 
 # The full OIDC discovery URL of AAP 2.7's built-in OIDC issuer.
 # Vault uses this to fetch the JWKS public keys for JWT validation.

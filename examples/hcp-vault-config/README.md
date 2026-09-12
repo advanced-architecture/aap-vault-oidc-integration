@@ -40,7 +40,7 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 | Variable | Description | Required | Default |
 |---|---|---|---|
 | `vault_addr` | HCP Vault Dedicated cluster URL | ✅ | `https://<cluster-id>.vault.<region>.hashicorp.cloud:8200` |
-| `vault_token` | HCP service principal token — read from `VAULT_TOKEN` env var | ✅ | *(env var)* |
+| `vault_token` | HCP service principal token — injected by the Vault Bootstrap Token credential | ✅ | *(credential injector)* |
 | `vault_namespace` | Vault namespace (HCP root namespace) | ✅ | `admin` |
 | `aap_oidc_discovery_url` | AAP 2.7 OIDC issuer URL — use the `issuer` value from `curl -L <aap-host>/o/.well-known/openid-configuration/` | ✅ | `https://aap.example.com/o` |
 | `vault_jwt_mount_path` | Mount path for the Vault JWT auth method | ✅ | `jwt` |
@@ -54,20 +54,62 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 
 ---
 
-## How to Run
+## Bootstrap Credential Setup
 
-Export your HCP service principal token as an environment variable, then run the playbook:
+The playbook receives the HCP service principal token via the **Vault Bootstrap Token** custom credential type — the same type used by the self-managed Vault config playbook. If you already created it for that playbook, skip to step 2.
 
-```bash
-export VAULT_TOKEN="<your-hcp-service-principal-token>"
-ansible-playbook examples/hcp-vault-config/configure_hcp_vault_oidc.yml \
-  -e vault_addr="https://<cluster-id>.vault.<region>.hashicorp.cloud:8200" \
-  -e aap_oidc_discovery_url="$(curl -sL ${CONTROLLER_HOST}/o/.well-known/openid-configuration/ | python3 -c 'import sys,json; print(json.load(sys.stdin)["issuer"])')" \
-  -e jwt_bound_audience="https://<cluster-id>.vault.<region>.hashicorp.cloud:8200" \
-  -e vault_namespace="admin"
+### 1 — Create the custom credential type (if not already done)
+
+In AAP → **Resources → Credential Types → Add**:
+
+| Field | Value |
+|---|---|
+| **Name** | `Vault Bootstrap Token` |
+| **Kind** | `Cloud` |
+
+**Input Configuration:**
+```yaml
+fields:
+  - id: vault_token
+    type: string
+    label: Vault Token
+    secret: true
+required:
+  - vault_token
 ```
 
-The remaining variables default to sensible values in `vars.yml` — override with `-e key=value` only if you need non-default names.
+**Injector Configuration:**
+```yaml
+extra_vars:
+  vault_token: '{{ vault_token }}'
+```
+
+### 2 — Create a credential instance for HCP
+
+In AAP → **Resources → Credentials → Add**:
+
+| Field | Value |
+|---|---|
+| **Name** | `Vault Bootstrap Token - HCP` |
+| **Credential Type** | `Vault Bootstrap Token` |
+| **Vault Token** | your HCP service principal token (Contributor role) |
+
+### 3 — Attach to the job template
+
+When creating the job template for `configure_hcp_vault_oidc.yml`, add this credential under **Credentials**.
+
+## How to Run
+
+Create the job template in AAP with the `Vault Bootstrap Token - HCP` credential attached, supply the required extra vars, and launch:
+
+```yaml
+vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
+aap_oidc_discovery_url: "https://<your-aap-host>/o"
+jwt_bound_audience: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
+vault_namespace: "admin"
+```
+
+The remaining variables default to sensible values in `vars.yml`.
 
 ---
 

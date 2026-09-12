@@ -7,9 +7,8 @@
 # Format: https://<cluster-id>.vault.<region>.hashicorp.cloud:8200
 vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
 
-# vault_token is read from the VAULT_TOKEN environment variable at run-time.
-# Export your HCP service principal token (Contributor role) before running:
-#   export VAULT_TOKEN="<your-hcp-service-principal-token>"
+# vault_token is injected by the Vault Bootstrap Token credential attached to this job template.
+# See README.md for how to create the custom credential type and credential instance.
 
 # Vault namespace. HCP Vault Dedicated uses 'admin' as the root namespace.
 # All auth method and policy operations must target this namespace.

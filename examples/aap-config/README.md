@@ -116,8 +116,8 @@ The bootstrap playbook (`configure_aap_vault_oidc.yml`) executes two administrat
 
 | Operation / Task | Endpoint & HTTP Method | Minimum AAP Role / Permission Required | Purpose |
 |---|---|---|---|
-| **Create / Look up Credential Type** | `POST /api/v2/credential_types/`<br>`GET /api/v2/credential_types/` | **System Administrator** (`is_superuser: true`) | Defines the custom `HashiCorp Vault JWT` credential type, its schema inputs, and injectors. |
-| **Create Credential Instance** | `POST /api/v2/credentials/` | **System Administrator** (or **Credential Admin** / **Organization Admin** for the target Organization) | Instantiates the `Vault JWT - <role_name>` credential record referencing the custom credential type. |
+| **Create / Look up Credential Type** | `POST /api/controller/v2/credential_types/`<br>`GET /api/controller/v2/credential_types/` | **System Administrator** (`is_superuser: true`) | Defines the custom `HashiCorp Vault JWT` credential type, its schema inputs, and injectors. |
+| **Create Credential Instance** | `POST /api/controller/v2/credentials/` | **System Administrator** (or **Credential Admin** / **Organization Admin** for the target Organization) | Instantiates the `Vault JWT - <role_name>` credential record referencing the custom credential type. |
 
 ### Minimum Role Summary
 
@@ -195,7 +195,7 @@ Edit `vars.yml` before running. All variables are required unless noted.
 
 | Variable | Default | Description |
 |---|---|---|
-| `controller_host` | *(credential injector)* | AAP Controller URL — injected by AAP Admin Credential |
+| `controller_host` | *(credential injector)* | AAP platform-gateway base URL (e.g. `https://<aap-host>`). API calls route to `/api/controller/v2/`. Injected by AAP Admin Credential. |
 | `controller_username` | *(credential injector)* | AAP admin username — injected by AAP Admin Credential |
 | `controller_password` | *(credential injector)* | AAP admin password — injected by AAP Admin Credential |
 | `controller_verify_ssl` | *(credential injector)* | TLS validation flag — injected by AAP Admin Credential |
@@ -223,7 +223,8 @@ After this playbook completes, the **HashiCorp Vault JWT** credential type and a
 ## What It Configures
 
 - **Creates a custom credential type** named `HashiCorp Vault JWT` with three input fields (`vault_addr`, `vault_jwt_mount`, `vault_role`) and an injector that exposes those values as Ansible extra vars inside job runs.
-- **Creates a credential instance** of the new type, populated with the Vault connection details from `vars.yml`, ready to be attached to any AAP job template.
+- **Creates a credential instance** of the `HashiCorp Vault JWT` type, populated with the Vault connection details from `vars.yml`, ready to be attached to any AAP job template.
+- **Creates a custom credential type** named `Vault Bootstrap Token` with a single secret `vault_token` field and an extra-vars injector — used by the Vault config job templates. The credential *instance* (which contains the actual token) must be created manually after this playbook runs.
 
 ---
 

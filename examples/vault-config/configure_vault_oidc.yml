@@ -1,4 +1,10 @@
 ---
+# vault_token is injected by the Vault Bootstrap Token credential attached to this job template.
+# Create a custom credential type with the following injector:
+#   env:
+#     VAULT_TOKEN: '{{ vault_token }}'
+# Then create a credential instance and attach it to this job template.
+
 - name: Configure Vault JWT auth method for AAP OIDC integration
   hosts: localhost
   connection: local
@@ -6,17 +12,11 @@
   vars_files:
     - vars.yml
 
-  vars:
-    # Bootstrap credentials are read from environment variables.
-    # Set VAULT_TOKEN before running this playbook:
-    #   export VAULT_TOKEN="<your-vault-admin-token>"
-    vault_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
-
   tasks:
-    - name: Fail if VAULT_TOKEN is not set
+    - name: Fail if vault_token is not set
       ansible.builtin.fail:
-        msg: "VAULT_TOKEN environment variable is not set. Export it before running this playbook."
-      when: vault_token | length == 0
+        msg: "vault_token is not set. Attach the Vault Bootstrap Token credential to this job template."
+      when: (vault_token is not defined) or (vault_token | length == 0)
 
     - name: Enable JWT auth method at configured mount path
       ansible.builtin.uri:

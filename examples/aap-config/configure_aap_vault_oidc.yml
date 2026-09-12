@@ -163,3 +163,57 @@
         msg: >-
           Vault JWT credential '{{ vault_jwt_role_name }}' ready
           (HTTP {{ credential_result.status }})
+
+    # -------------------------------------------------------------------------
+    # Task 3 — Create the Vault Bootstrap Token credential type
+    #          (credential instance must be created manually — requires the token)
+    # -------------------------------------------------------------------------
+    - name: Create Vault Bootstrap Token credential type
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/credential_types/"
+        method: POST
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "Vault Bootstrap Token"
+          kind: "cloud"
+          inputs:
+            fields:
+              - id: "vault_token"
+                type: "string"
+                label: "Vault Token"
+                secret: true
+            required:
+              - "vault_token"
+          injectors:
+            extra_vars:
+              vault_token: "{% raw %}{{ vault_token }}{% endraw %}"
+        status_code:
+          - 200
+          - 201
+          - 400
+        validate_certs: "{{ controller_verify_ssl }}"
+      register: vault_bootstrap_type_result
+      failed_when:
+        - vault_bootstrap_type_result.status == 400
+        - "'Name and Kind already exists' not in (vault_bootstrap_type_result.json | to_json)"
+
+    - name: Look up Vault Bootstrap Token credential type ID
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/credential_types/?name=Vault+Bootstrap+Token"
+        method: GET
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ controller_verify_ssl }}"
+      register: vault_bootstrap_type_lookup
+
+    - name: Report Vault Bootstrap Token credential type
+      ansible.builtin.debug:
+        msg: >-
+          Vault Bootstrap Token credential type ID: {{ vault_bootstrap_type_lookup.json.results[0].id }}
+          — create a credential instance manually in AAP with your Vault/HCP service principal token.

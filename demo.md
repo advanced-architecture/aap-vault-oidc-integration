@@ -103,7 +103,7 @@ Run the Vault configuration playbook as an AAP job template. It enables the JWT 
    | **Playbook** | `examples/vault-config/configure_vault_oidc.yml` |
    | **Execution Environment** | An EE with `community.hashi_vault >= 6.x` |
 
-3. Under **Credentials**, no credential attachment is needed. The Vault bootstrap token is supplied via the `VAULT_TOKEN` environment variable set in the execution environment.
+3. Under **Credentials**, attach the `Vault Bootstrap Token - <your-cluster>` credential (type: *Vault Bootstrap Token*). This injects `vault_token` as an extra var.
 
 4. In the **Extra Variables** field, supply the environment-specific values:
 
@@ -145,7 +145,7 @@ Run the HCP Vault Dedicated configuration playbook as an AAP job template. It en
    | **Playbook** | `examples/hcp-vault-config/configure_hcp_vault_oidc.yml` |
    | **Execution Environment** | An EE with `community.hashi_vault >= 6.x` |
 
-3. Under **Credentials**, no credential attachment is needed. The HCP service principal token is supplied via the `VAULT_TOKEN` environment variable set in the execution environment.
+3. Under **Credentials**, attach the `Vault Bootstrap Token - HCP` credential (type: *Vault Bootstrap Token*). This injects `vault_token` as an extra var.
 
 4. In the **Extra Variables** field, supply the environment-specific values:
 

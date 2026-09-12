@@ -12,10 +12,7 @@ This playbook configures the HashiCorp Vault side of the AAP OIDC/JWT integratio
   ansible-galaxy collection install community.hashi_vault
   ```
 - **Network access** from the machine running this playbook to the Vault server (`vault_addr`)
-- **A Vault bootstrap token** with permissions to:
-  - Enable auth methods (`sys/auth`)
-  - Write policies (`sys/policies/acl`)
-  - Write secrets to the KV v2 mount
+- **A Vault bootstrap token** with permissions to enable auth methods (`sys/auth`), write policies (`sys/policies/acl`), and write KV v2 secrets — injected via the **Vault Bootstrap Token** AAP credential (see [Bootstrap Credential Setup](#bootstrap-credential-setup) below)
 
 In the case where a Vault server is needed, a Vault Dedicated cluster can be configured on portal.cloud.hashicorp.com/services/vault/clusters in a few clicks.  
 
@@ -39,7 +36,7 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 | Variable | Description | Required | Default |
 |---|---|---|---|
 | `vault_addr` | Vault server address (no trailing slash) | ✅ | `https://vault.example.com:8200` |
-| `vault_token` | Bootstrap admin token — read from `VAULT_TOKEN` env var | ✅ | *(env var)* |
+| `vault_token` | Bootstrap admin token — injected by the Vault Bootstrap Token credential | ✅ | *(credential injector)* |
 | `aap_oidc_discovery_url` | AAP 2.7 OIDC issuer URL — use the `issuer` value from `curl -L <aap-host>/o/.well-known/openid-configuration/` | ✅ | `https://aap.example.com/o` |
 | `vault_jwt_mount_path` | Mount path for the Vault JWT auth method | ✅ | `jwt` |
 | `vault_jwt_role_name` | Name of the JWT role Vault creates for AAP jobs | ✅ | `aap-automation` |
@@ -52,19 +49,61 @@ All variables are defined in [`vars.yml`](vars.yml). Override any of them at run
 
 ---
 
-## How to Run
+## Bootstrap Credential Setup
 
-Export your Vault bootstrap credentials as environment variables, then run the playbook:
+The playbook receives the Vault bootstrap token via the **Vault Bootstrap Token** custom credential type. Create this once — it is shared by both the self-managed and HCP Vault config playbooks.
 
-```bash
-export VAULT_TOKEN="<your-vault-admin-token>"
-ansible-playbook examples/vault-config/configure_vault_oidc.yml \
-  -e vault_addr="https://<your-vault-host>:8200" \
-  -e aap_oidc_discovery_url="$(curl -sL ${CONTROLLER_HOST}/o/.well-known/openid-configuration/ | python3 -c 'import sys,json; print(json.load(sys.stdin)["issuer"])')" \
-  -e jwt_bound_audience="https://<your-vault-host>:8200"
+### 1 — Create the custom credential type
+
+In AAP → **Resources → Credential Types → Add**:
+
+| Field | Value |
+|---|---|
+| **Name** | `Vault Bootstrap Token` |
+| **Kind** | `Cloud` |
+
+**Input Configuration:**
+```yaml
+fields:
+  - id: vault_token
+    type: string
+    label: Vault Token
+    secret: true
+required:
+  - vault_token
 ```
 
-The remaining variables (`vault_jwt_mount_path`, `vault_jwt_role_name`, `vault_policy_name`, etc.) default to sensible values in `vars.yml` — override with `-e key=value` only if you need non-default names.
+**Injector Configuration:**
+```yaml
+extra_vars:
+  vault_token: '{{ vault_token }}'
+```
+
+### 2 — Create a credential instance
+
+In AAP → **Resources → Credentials → Add**:
+
+| Field | Value |
+|---|---|
+| **Name** | `Vault Bootstrap Token - <your-cluster>` |
+| **Credential Type** | `Vault Bootstrap Token` |
+| **Vault Token** | your Vault admin/bootstrap token |
+
+### 3 — Attach to the job template
+
+When creating the job template for `configure_vault_oidc.yml`, add this credential under **Credentials**.
+
+## How to Run
+
+Create the job template in AAP with the `Vault Bootstrap Token` credential attached, supply the required extra vars, and launch:
+
+```yaml
+vault_addr: "https://<your-vault-host>:8200"
+aap_oidc_discovery_url: "https://<your-aap-host>/o"
+jwt_bound_audience: "https://<your-vault-host>:8200"
+```
+
+The remaining variables (`vault_jwt_mount_path`, `vault_jwt_role_name`, `vault_policy_name`, etc.) default to sensible values in `vars.yml`.
 
 ---
 
