@@ -423,7 +423,7 @@
         status_code: [200, 201, 204, 400]
         validate_certs: "{{ controller_verify_ssl }}"
       failed_when:
-        - item | string | length > 0
+        - item > 0
         - jt_jwt_attach.status == 400
         - "'already exists' not in (jt_jwt_attach.json | to_json)"
       register: jt_jwt_attach
