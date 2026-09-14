@@ -389,18 +389,17 @@
         headers:
           Content-Type: "application/json"
         body_format: json
-        body:
-          id: "{{ vault_bootstrap_cred_id | int }}"
+        body: "{{ {'id': vault_bootstrap_cred_id | int} }}"
         status_code: [200, 201, 204, 400]
         validate_certs: "{{ controller_verify_ssl }}"
       failed_when:
-        - item | string | length > 0
+        - item != None
         - jt_bootstrap_attach.status == 400
         - "'already exists' not in (jt_bootstrap_attach.json | to_json)"
       register: jt_bootstrap_attach
       when:
         - vault_bootstrap_cred_id is defined
-        - item | string | length > 0
+        - item != None
       loop:
         - "{{ jt_id_map.get('2 - Configure HCP Vault OIDC', '') }}"
         - "{{ jt_id_map.get('2a - Configure Vault OIDC (self-managed)', '') }}"
@@ -418,18 +417,17 @@
         headers:
           Content-Type: "application/json"
         body_format: json
-        body:
-          id: "{{ vault_jwt_cred_id | int }}"
+        body: "{{ {'id': vault_jwt_cred_id | int} }}"
         status_code: [200, 201, 204, 400]
         validate_certs: "{{ controller_verify_ssl }}"
       failed_when:
-        - item > 0
+        - item is not None
         - jt_jwt_attach.status == 400
         - "'already exists' not in (jt_jwt_attach.json | to_json)"
       register: jt_jwt_attach
       when:
         - vault_jwt_cred_id is defined
-        - item > 0
+        - item is not None
       loop:
         - "{{ jt_id_map.get('3a - Demo: Self-Managed Vault Secret via OIDC JWT', '') }}"
         - "{{ jt_id_map.get('3b - Demo: HCP Vault Secret via OIDC JWT', '') }}"
