@@ -115,7 +115,7 @@
 
     - name: Capture credential type ID
       ansible.builtin.set_fact:
-        vault_jwt_credential_type_id: "{{ credential_type_lookup.json.results[0].id | int }}"
+        vault_jwt_credential_type_id: "{{ credential_type_lookup.json.results[0].id }}"
 
     - name: Report credential type
       ansible.builtin.debug:
@@ -136,7 +136,7 @@
 
     - name: Capture organization ID
       ansible.builtin.set_fact:
-        aap_organization_id: "{{ org_lookup.json.results[0].id | int }}"
+        aap_organization_id: "{{ org_lookup.json.results[0].id }}"
 
     - name: Create Vault JWT credential instance
       ansible.builtin.uri:
@@ -224,7 +224,7 @@
     - name: Report Vault Bootstrap Token credential type
       ansible.builtin.debug:
         msg: >-
-          Vault Bootstrap Token credential type ID: {{ vault_bootstrap_type_lookup.json.results[0].id | int }}
+          Vault Bootstrap Token credential type ID: {{ vault_bootstrap_type_lookup.json.results[0].id }}
           — create a credential instance manually in AAP with your Vault/HCP service principal token.
 
     # -------------------------------------------------------------------------
@@ -247,7 +247,7 @@
 
     - name: Capture project ID
       ansible.builtin.set_fact:
-        aap_project_id: "{{ project_lookup.json.results[0].id | int }}"
+        aap_project_id: "{{ project_lookup.json.results[0].id }}"
 
     - name: Look up inventory ID
       ansible.builtin.uri:
@@ -266,11 +266,11 @@
 
     - name: Capture inventory ID
       ansible.builtin.set_fact:
-        aap_inventory_id: "{{ inventory_lookup.json.results[0].id | int }}"
+        aap_inventory_id: "{{ inventory_lookup.json.results[0].id }}"
 
     - name: Look up Vault Bootstrap Token credential ID
       ansible.builtin.uri:
-        url: "{{ aap_api_base }}/v2/credentials/?name=Vault+Bootstrap+Token+-+HCP&credential_type={{ vault_bootstrap_type_lookup.json.results[0].id | int }}"
+        url: "{{ aap_api_base }}/v2/credentials/?name=Vault+Bootstrap+Token+-+HCP&credential_type={{ vault_bootstrap_type_lookup.json.results[0].id }}"
         method: GET
         url_username: "{{ controller_username }}"
         url_password: "{{ controller_password }}"
@@ -389,17 +389,18 @@
         headers:
           Content-Type: "application/json"
         body_format: json
-        body: "{{ {'id': vault_bootstrap_cred_id | int} }}"
+        body:
+          id: "{{ vault_bootstrap_cred_id | int }}"
         status_code: [200, 201, 204, 400]
         validate_certs: "{{ controller_verify_ssl }}"
       failed_when:
-        - item != None
+        - item | string | length > 0
         - jt_bootstrap_attach.status == 400
         - "'already exists' not in (jt_bootstrap_attach.json | to_json)"
       register: jt_bootstrap_attach
       when:
         - vault_bootstrap_cred_id is defined
-        - item != None
+        - item | string | length > 0
       loop:
         - "{{ jt_id_map.get('2 - Configure HCP Vault OIDC', '') }}"
         - "{{ jt_id_map.get('2a - Configure Vault OIDC (self-managed)', '') }}"
@@ -417,17 +418,18 @@
         headers:
           Content-Type: "application/json"
         body_format: json
-        body: "{{ {'id': vault_jwt_cred_id | int} }}"
+        body:
+          id: "{{ vault_jwt_cred_id | int }}"
         status_code: [200, 201, 204, 400]
         validate_certs: "{{ controller_verify_ssl }}"
       failed_when:
-        - item is not None
+        - item | string | length > 0
         - jt_jwt_attach.status == 400
         - "'already exists' not in (jt_jwt_attach.json | to_json)"
       register: jt_jwt_attach
       when:
         - vault_jwt_cred_id is defined
-        - item is not None
+        - item | string | length > 0
       loop:
         - "{{ jt_id_map.get('3a - Demo: Self-Managed Vault Secret via OIDC JWT', '') }}"
         - "{{ jt_id_map.get('3b - Demo: HCP Vault Secret via OIDC JWT', '') }}"
