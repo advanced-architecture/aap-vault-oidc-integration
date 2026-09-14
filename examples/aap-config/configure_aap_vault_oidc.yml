@@ -347,6 +347,38 @@
       loop_control:
         label: "{{ item.name }}"
 
+    # Look up all template IDs by name after create — handles the already-exists case
+    # where jt_result has no .json.id for templates that returned 400.
+    - name: Look up job template IDs by name
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/job_templates/?name={{ item | urlencode }}"
+        method: GET
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ controller_verify_ssl }}"
+      register: jt_lookup
+      loop:
+        - "2 - Configure HCP Vault OIDC"
+        - "2a - Configure Vault OIDC (self-managed)"
+        - "3a - Demo: Self-Managed Vault Secret via OIDC JWT"
+        - "3b - Demo: HCP Vault Secret via OIDC JWT"
+        - "4 - Configure Vault OIDC Secret Lookup"
+        - "5 - Demo: Vault OIDC Secret Lookup"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Build job template name-to-ID map
+      ansible.builtin.set_fact:
+        jt_id_map: >-
+          {{ jt_id_map | default({}) | combine({
+            item.item: item.json.results[0].id | int
+          }) }}
+      loop: "{{ jt_lookup.results }}"
+      when: item.json.count > 0
+      loop_control:
+        label: "{{ item.item }}"
+
     - name: Attach Vault Bootstrap Token credential to Vault config job templates
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/job_templates/{{ item }}/credentials/"
@@ -358,14 +390,21 @@
           Content-Type: "application/json"
         body_format: json
         body:
-          id: "{{ vault_bootstrap_cred_id }}"
-        status_code: [200, 201, 204]
+          id: "{{ vault_bootstrap_cred_id | int }}"
+        status_code: [200, 201, 204, 400]
         validate_certs: "{{ controller_verify_ssl }}"
-      when: vault_bootstrap_cred_id is defined
+      failed_when:
+        - item | string | length > 0
+        - jt_bootstrap_attach.status == 400
+        - "'already exists' not in (jt_bootstrap_attach.json | to_json)"
+      register: jt_bootstrap_attach
+      when:
+        - vault_bootstrap_cred_id is defined
+        - item | string | length > 0
       loop:
-        - "{{ (jt_result.results | selectattr('item.name', 'equalto', '2 - Configure HCP Vault OIDC') | first).json.id | default('') }}"
-        - "{{ (jt_result.results | selectattr('item.name', 'equalto', '2a - Configure Vault OIDC (self-managed)') | first).json.id | default('') }}"
-        - "{{ (jt_result.results | selectattr('item.name', 'equalto', '4 - Configure Vault OIDC Secret Lookup') | first).json.id | default('') }}"
+        - "{{ jt_id_map.get('2 - Configure HCP Vault OIDC', '') }}"
+        - "{{ jt_id_map.get('2a - Configure Vault OIDC (self-managed)', '') }}"
+        - "{{ jt_id_map.get('4 - Configure Vault OIDC Secret Lookup', '') }}"
       loop_control:
         label: "{{ item }}"
 
@@ -380,18 +419,26 @@
           Content-Type: "application/json"
         body_format: json
         body:
-          id: "{{ vault_jwt_cred_id }}"
-        status_code: [200, 201, 204]
+          id: "{{ vault_jwt_cred_id | int }}"
+        status_code: [200, 201, 204, 400]
         validate_certs: "{{ controller_verify_ssl }}"
-      when: vault_jwt_cred_id is defined
+      failed_when:
+        - item | string | length > 0
+        - jt_jwt_attach.status == 400
+        - "'already exists' not in (jt_jwt_attach.json | to_json)"
+      register: jt_jwt_attach
+      when:
+        - vault_jwt_cred_id is defined
+        - item | string | length > 0
       loop:
-        - "{{ (jt_result.results | selectattr('item.name', 'equalto', '3a - Demo: Self-Managed Vault Secret via OIDC JWT') | first).json.id | default('') }}"
-        - "{{ (jt_result.results | selectattr('item.name', 'equalto', '3b - Demo: HCP Vault Secret via OIDC JWT') | first).json.id | default('') }}"
+        - "{{ jt_id_map.get('3a - Demo: Self-Managed Vault Secret via OIDC JWT', '') }}"
+        - "{{ jt_id_map.get('3b - Demo: HCP Vault Secret via OIDC JWT', '') }}"
       loop_control:
         label: "{{ item }}"
 
     - name: Report job templates
       ansible.builtin.debug:
         msg: >-
-          Job templates created. If Vault Bootstrap Token or Vault JWT credentials
-          were not yet created, attach them manually to the relevant templates.
+          Job templates created and credentials attached where available.
+          If Vault Bootstrap Token or Vault JWT credentials were not yet created,
+          attach them manually to the relevant templates.
