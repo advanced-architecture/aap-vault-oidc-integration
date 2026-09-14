@@ -429,7 +429,7 @@
       register: jt_jwt_attach
       when:
         - vault_jwt_cred_id is defined
-        - item | string | length > 0
+        - item > 0
       loop:
         - "{{ jt_id_map.get('3a - Demo: Self-Managed Vault Secret via OIDC JWT', '') }}"
         - "{{ jt_id_map.get('3b - Demo: HCP Vault Secret via OIDC JWT', '') }}"
