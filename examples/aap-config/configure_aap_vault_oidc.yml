@@ -32,6 +32,10 @@
     aap_api_base: "{{ controller_host }}/api/controller"
     # Organization that will own the credential instance
     aap_organization: "Default"
+    # AAP project name — used to look up the project ID for job template creation
+    aap_project_name: "AAP Vault OIDC Integration Pattern"
+    # Inventory name to attach to job templates — must resolve localhost
+    aap_inventory_name: "Demo Inventory"
 
   tasks:
     - name: Fail if required controller credentials are not set
@@ -222,3 +226,172 @@
         msg: >-
           Vault Bootstrap Token credential type ID: {{ vault_bootstrap_type_lookup.json.results[0].id }}
           — create a credential instance manually in AAP with your Vault/HCP service principal token.
+
+    # -------------------------------------------------------------------------
+    # Task 4 — Create job templates
+    # -------------------------------------------------------------------------
+    - name: Look up project ID
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/projects/?name={{ aap_project_name | urlencode }}"
+        method: GET
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ controller_verify_ssl }}"
+      register: project_lookup
+
+    - name: Fail if project not found
+      ansible.builtin.fail:
+        msg: "Project '{{ aap_project_name }}' not found. Add the repo as an AAP project and sync it first."
+      when: project_lookup.json.count == 0
+
+    - name: Capture project ID
+      ansible.builtin.set_fact:
+        aap_project_id: "{{ project_lookup.json.results[0].id }}"
+
+    - name: Look up inventory ID
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/inventories/?name={{ aap_inventory_name | urlencode }}"
+        method: GET
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ controller_verify_ssl }}"
+      register: inventory_lookup
+
+    - name: Fail if inventory not found
+      ansible.builtin.fail:
+        msg: "Inventory '{{ aap_inventory_name }}' not found. Update aap_inventory_name in vars or extra vars."
+      when: inventory_lookup.json.count == 0
+
+    - name: Capture inventory ID
+      ansible.builtin.set_fact:
+        aap_inventory_id: "{{ inventory_lookup.json.results[0].id }}"
+
+    - name: Look up Vault Bootstrap Token credential ID
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/credentials/?name=Vault+Bootstrap+Token+-+HCP&credential_type={{ vault_bootstrap_type_lookup.json.results[0].id }}"
+        method: GET
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ controller_verify_ssl }}"
+      register: vault_bootstrap_cred_lookup
+
+    - name: Capture Vault Bootstrap Token credential ID (if it exists)
+      ansible.builtin.set_fact:
+        vault_bootstrap_cred_id: "{{ vault_bootstrap_cred_lookup.json.results[0].id }}"
+      when: vault_bootstrap_cred_lookup.json.count > 0
+
+    - name: Look up Vault JWT credential ID
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/credentials/?name=Vault+JWT+-+{{ vault_jwt_role_name | urlencode }}"
+        method: GET
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ controller_verify_ssl }}"
+      register: vault_jwt_cred_lookup
+
+    - name: Capture Vault JWT credential ID
+      ansible.builtin.set_fact:
+        vault_jwt_cred_id: "{{ vault_jwt_cred_lookup.json.results[0].id }}"
+      when: vault_jwt_cred_lookup.json.count > 0
+
+    - name: Create job templates
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/job_templates/"
+        method: POST
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "{{ item.name }}"
+          job_type: "run"
+          inventory: "{{ aap_inventory_id }}"
+          project: "{{ aap_project_id }}"
+          playbook: "{{ item.playbook }}"
+          extra_vars: "{{ item.extra_vars | default({}) | to_json }}"
+        status_code: [200, 201, 400]
+        validate_certs: "{{ controller_verify_ssl }}"
+      register: jt_result
+      failed_when:
+        - jt_result.status == 400
+        - "'already exists' not in (jt_result.json | to_json)"
+      loop:
+        - name: "2 - Configure HCP Vault OIDC"
+          playbook: "examples/hcp-vault-config/configure_hcp_vault_oidc.yml"
+          extra_vars:
+            vault_addr: "{{ vault_addr }}"
+            vault_namespace: "{{ vault_namespace | default('admin') }}"
+        - name: "2a - Configure Vault OIDC (self-managed)"
+          playbook: "examples/vault-config/configure_vault_oidc.yml"
+          extra_vars:
+            vault_addr: "{{ vault_addr }}"
+        - name: "3a - Demo: Self-Managed Vault Secret via OIDC JWT"
+          playbook: "examples/demo-playbook/read_vault_secret.yml"
+        - name: "3b - Demo: HCP Vault Secret via OIDC JWT"
+          playbook: "examples/hcp-demo-playbook/read_hcp_vault_secret.yml"
+        - name: "4 - Configure Vault OIDC Secret Lookup"
+          playbook: "examples/vault-secret-lookup/configure_vault_secret_lookup.yml"
+          extra_vars:
+            vault_addr: "{{ vault_addr }}"
+            vault_jwt_mount_path: "{{ vault_jwt_mount_path }}"
+            vault_jwt_role_name: "{{ vault_jwt_role_name }}"
+            vault_namespace: "{{ vault_namespace | default('admin') }}"
+        - name: "5 - Demo: Vault OIDC Secret Lookup"
+          playbook: "examples/vault-secret-lookup/demo_vault_secret_lookup.yml"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Attach Vault Bootstrap Token credential to Vault config job templates
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/job_templates/{{ item }}/credentials/"
+        method: POST
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          id: "{{ vault_bootstrap_cred_id }}"
+        status_code: [200, 201, 204]
+        validate_certs: "{{ controller_verify_ssl }}"
+      when: vault_bootstrap_cred_id is defined
+      loop:
+        - "{{ (jt_result.results | selectattr('item.name', 'equalto', '2 - Configure HCP Vault OIDC') | first).json.id | default('') }}"
+        - "{{ (jt_result.results | selectattr('item.name', 'equalto', '2a - Configure Vault OIDC (self-managed)') | first).json.id | default('') }}"
+        - "{{ (jt_result.results | selectattr('item.name', 'equalto', '4 - Configure Vault OIDC Secret Lookup') | first).json.id | default('') }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Attach Vault JWT credential to demo job templates
+      ansible.builtin.uri:
+        url: "{{ aap_api_base }}/v2/job_templates/{{ item }}/credentials/"
+        method: POST
+        url_username: "{{ controller_username }}"
+        url_password: "{{ controller_password }}"
+        force_basic_auth: true
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          id: "{{ vault_jwt_cred_id }}"
+        status_code: [200, 201, 204]
+        validate_certs: "{{ controller_verify_ssl }}"
+      when: vault_jwt_cred_id is defined
+      loop:
+        - "{{ (jt_result.results | selectattr('item.name', 'equalto', '3a - Demo: Self-Managed Vault Secret via OIDC JWT') | first).json.id | default('') }}"
+        - "{{ (jt_result.results | selectattr('item.name', 'equalto', '3b - Demo: HCP Vault Secret via OIDC JWT') | first).json.id | default('') }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Report job templates
+      ansible.builtin.debug:
+        msg: >-
+          Job templates created. If Vault Bootstrap Token or Vault JWT credentials
+          were not yet created, attach them manually to the relevant templates.
