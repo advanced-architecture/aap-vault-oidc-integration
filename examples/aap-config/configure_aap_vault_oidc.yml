@@ -280,7 +280,7 @@
 
     - name: Capture Vault Bootstrap Token credential ID (if it exists)
       ansible.builtin.set_fact:
-        vault_bootstrap_cred_id: "{{ vault_bootstrap_cred_lookup.json.results[0].id }}"
+        vault_bootstrap_cred_id: "{{ vault_bootstrap_cred_lookup.json.results[0].id | int }}"
       when: vault_bootstrap_cred_lookup.json.count > 0
 
     - name: Look up Vault JWT credential ID
@@ -295,7 +295,7 @@
 
     - name: Capture Vault JWT credential ID
       ansible.builtin.set_fact:
-        vault_jwt_cred_id: "{{ vault_jwt_cred_lookup.json.results[0].id }}"
+        vault_jwt_cred_id: "{{ vault_jwt_cred_lookup.json.results[0].id | int }}"
       when: vault_jwt_cred_lookup.json.count > 0
 
     - name: Create job templates
