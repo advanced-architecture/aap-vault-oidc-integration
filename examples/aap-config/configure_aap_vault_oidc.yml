@@ -115,7 +115,7 @@
 
     - name: Capture credential type ID
       ansible.builtin.set_fact:
-        vault_jwt_credential_type_id: "{{ credential_type_lookup.json.results[0].id }}"
+        vault_jwt_credential_type_id: "{{ credential_type_lookup.json.results[0].id | int }}"
 
     - name: Report credential type
       ansible.builtin.debug:
@@ -136,7 +136,7 @@
 
     - name: Capture organization ID
       ansible.builtin.set_fact:
-        aap_organization_id: "{{ org_lookup.json.results[0].id }}"
+        aap_organization_id: "{{ org_lookup.json.results[0].id | int }}"
 
     - name: Create Vault JWT credential instance
       ansible.builtin.uri:
@@ -224,7 +224,7 @@
     - name: Report Vault Bootstrap Token credential type
       ansible.builtin.debug:
         msg: >-
-          Vault Bootstrap Token credential type ID: {{ vault_bootstrap_type_lookup.json.results[0].id }}
+          Vault Bootstrap Token credential type ID: {{ vault_bootstrap_type_lookup.json.results[0].id | int }}
           — create a credential instance manually in AAP with your Vault/HCP service principal token.
 
     # -------------------------------------------------------------------------
@@ -247,7 +247,7 @@
 
     - name: Capture project ID
       ansible.builtin.set_fact:
-        aap_project_id: "{{ project_lookup.json.results[0].id }}"
+        aap_project_id: "{{ project_lookup.json.results[0].id | int }}"
 
     - name: Look up inventory ID
       ansible.builtin.uri:
@@ -266,11 +266,11 @@
 
     - name: Capture inventory ID
       ansible.builtin.set_fact:
-        aap_inventory_id: "{{ inventory_lookup.json.results[0].id }}"
+        aap_inventory_id: "{{ inventory_lookup.json.results[0].id | int }}"
 
     - name: Look up Vault Bootstrap Token credential ID
       ansible.builtin.uri:
-        url: "{{ aap_api_base }}/v2/credentials/?name=Vault+Bootstrap+Token+-+HCP&credential_type={{ vault_bootstrap_type_lookup.json.results[0].id }}"
+        url: "{{ aap_api_base }}/v2/credentials/?name=Vault+Bootstrap+Token+-+HCP&credential_type={{ vault_bootstrap_type_lookup.json.results[0].id | int }}"
         method: GET
         url_username: "{{ controller_username }}"
         url_password: "{{ controller_password }}"
