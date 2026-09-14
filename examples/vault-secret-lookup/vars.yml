@@ -1,0 +1,18 @@
+---
+# AAP admin credentials — injected by the AAP Admin Credential attached to this job template.
+# See examples/aap-config/README.md for how to create that credential type.
+
+# Vault connection — same values used in the Vault config playbooks
+vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"
+
+# JWT auth mount path in Vault
+vault_jwt_mount_path: "jwt"
+
+# JWT role name configured in Vault
+vault_jwt_role_name: "aap-automation"
+
+# Vault namespace — set to 'admin' for HCP Vault Dedicated; leave empty for self-managed Vault
+vault_namespace: "admin"
+
+# Organization that will own the credentials
+aap_organization: "Default"

@@ -14,6 +14,7 @@ When a task is picked up for implementation, move it into `.github/.agents/plan.
 ## Open tasks
 
 - [ ] **secure-vault-token-logs** — `vault_token` appears in plain text in AAP job logs via the `X-Vault-Token` header on `ansible.builtin.uri` tasks in both Vault config playbooks. Add `no_log: true` to all `uri` tasks that include the token header, or investigate whether `uri` scrubs `X-Vault-Token` automatically when `url_password` no_log behaviour applies.
+- [ ] **aap-bootstrap-templates** — add tasks to `configure_aap_vault_oidc.yml` to create the AAP job templates (Vault config, HCP Vault config, demo, HCP demo) as part of the bootstrap, so they don't need to be created manually in the UI.
 
 ---
 
