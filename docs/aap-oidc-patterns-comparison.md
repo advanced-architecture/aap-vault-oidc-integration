@@ -43,7 +43,11 @@ Red Hat documentation explicitly states:
 > *"the JWT is only used by the control plane to access HashiCorp Vault and retrieve
 > secrets before automation begins executing."*
 
+#todo - add direct reference link
+
 ### Credential type injector configuration
+
+#todo - Update this section. Custom credential not accurate for this model. There is a built in credential type, which should be used instead.
 
 ```yaml
 # Custom credential type input
@@ -62,7 +66,10 @@ extra_vars:
 The secret field is wired to the Vault lookup credential using the key icon in the
 AAP UI — no hardcoded secret is stored anywhere.
 
+
 ### Playbook usage
+
+#todo - update this section to use built-in Vault OIDC credential type, instead of custom credential type.
 
 ```yaml
 - name: Fail if secret was not injected
@@ -89,11 +96,13 @@ AAP UI — no hardcoded secret is stored anywhere.
 - Each secret field requires its own credential and UI wiring. Fetching multiple
   secrets requires multiple custom credential bindings.
 
+#todo - add direct link to current documentation to cite this limitation
+
 ---
 
 ## Pattern 2 — Playbook-Level JWT Exchange (Community-Documented)
 
-### How it works
+### How this might work (unconfirmed)
 
 The playbook retrieves the JWT from the EE environment at runtime and uses it to
 authenticate to Vault directly, exchanging it for a short-lived Vault client token:
