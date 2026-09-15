@@ -132,6 +132,7 @@ See [`demo.md`](demo.md) for the full step-by-step walkthrough. The short form:
 
 ## References
 
+- [AAP OIDC Pattern Comparison — Pattern 1 (AAP-native lookup) vs Pattern 2 (playbook-level JWT exchange)](docs/aap-oidc-patterns-comparison.md)
 - [AAP 2.7 — What's New: OIDC Authentication for HashiCorp Vault](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/whats_new-oidc_authentication_for_hashicorp_vault)
 - [AAP 2.7 — What's New: Claims for workload identity](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/whats_new-claims_for_workload_identity)
 - [Just-in-time access to HashiCorp Vault using the Red Hat Ansible Automation Platform OIDC provider](https://developers.redhat.com/articles/2026/08/11/just-in-time-access-to-hashicorp-vault-with-ansible-oidc-provider?source=sso#enabling_the_oidc_feature_for_hashicorp_vault)
