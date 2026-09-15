@@ -1,6 +1,7 @@
 ---
-# AAP admin credentials — injected by the AAP Admin Credential attached to this job template.
-# See examples/aap-config/README.md for how to create that credential type.
+# AAP admin credentials are read from CONTROLLER_* environment variables.
+# Attach the built-in "Red Hat Ansible Automation Platform" credential type to this job template.
+# See examples/aap-config/README.md for setup instructions.
 
 # Vault connection — same values used in the Vault config playbooks
 vault_addr: "https://<cluster-id>.vault.<region>.hashicorp.cloud:8200"

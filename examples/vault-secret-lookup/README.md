@@ -44,7 +44,7 @@ Create the job template for `configure_vault_secret_lookup.yml`:
 |---|---|
 | **Name** | `4 - Configure Vault OIDC Secret Lookup` |
 | **Playbook** | `examples/vault-secret-lookup/configure_vault_secret_lookup.yml` |
-| **Credentials** | `AAP Admin - sandbox` (type: *AAP Admin Credential*) |
+| **Credentials** | `AAP Admin - sandbox` (type: *Red Hat Ansible Automation Platform*) |
 
 **Extra Variables:**
 ```yaml

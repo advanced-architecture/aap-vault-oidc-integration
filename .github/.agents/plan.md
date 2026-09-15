@@ -179,7 +179,7 @@ sequenceDiagram
 - The built-in type also provides `TOWER_*` and `AAP_*` aliases; `CONTROLLER_*` is preferred as the canonical modern name.
 - The `Vault Bootstrap Token` custom credential type (injecting `vault_token`) is a separate task (**aap-credential-hide-token-uri**) and is not changed here.
 
-**Status:** `[ ] pending`
+**Status:** `[x] completed`
 
 ---
 

@@ -1,6 +1,7 @@
 ---
-# AAP admin credentials are injected by the AAP Admin Credential attached to this job template.
-# See README.md for how to create the custom credential type and credential instance.
+# AAP admin credentials are read from CONTROLLER_* environment variables.
+# Attach the built-in "Red Hat Ansible Automation Platform" credential type to this job template.
+# See README.md for setup instructions.
 
 # Address of the Vault server (no trailing slash) — stored in the AAP credential
 vault_addr: "https://vault.example.com:8200"

@@ -57,7 +57,7 @@ Run the AAP configuration playbook as a job template. It creates the Vault JWT c
    | **Playbook** | `examples/aap-config/configure_aap_vault_oidc.yml` |
    | **Execution Environment** | Default EE (no extra collections required) |
 
-3. Under **Credentials**, attach the `AAP Admin Credential` instance (type: *AAP Admin Credential*). This injects `controller_host`, `controller_username`, `controller_password`, and `controller_verify_ssl` as extra vars.
+3. Under **Credentials**, attach the **Red Hat Ansible Automation Platform** credential instance. This injects `CONTROLLER_HOST`, `CONTROLLER_USERNAME`, `CONTROLLER_PASSWORD`, and `CONTROLLER_VERIFY_SSL` as environment variables.
 
 4. In the **Extra Variables** field, supply the Vault connection and project values:
 
@@ -249,7 +249,7 @@ This step demonstrates the **AAP-native OIDC secret lookup** pattern. Unlike Ste
 ### Step 5a — Create the Vault OIDC Lookup Credential
 
 1. Go to **Resources → Templates** → open `4 - Configure Vault OIDC Secret Lookup`
-2. Under **Credentials**, confirm the `AAP Admin Credential` instance is attached
+2. Under **Credentials**, confirm the **Red Hat Ansible Automation Platform** credential instance is attached
 3. In the **Extra Variables** field, supply the Vault connection values:
 
    ```yaml

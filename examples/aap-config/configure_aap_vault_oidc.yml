@@ -1,8 +1,11 @@
 ---
-# Bootstrap credentials are injected by the AAP Admin Credential attached to this job template.
-# Create a custom credential type with the following injector extra_vars:
-#   controller_host, controller_username, controller_password, controller_verify_ssl
-# Then create a credential instance of that type and attach it to this job template.
+# Bootstrap credentials are read from environment variables set on the execution node.
+# Before running this job template, export the following variables (or inject them via the
+# built-in "Red Hat Ansible Automation Platform" credential type attached to the job template):
+#   CONTROLLER_HOST       — AAP platform-gateway base URL (e.g. https://<aap-host>)
+#   CONTROLLER_USERNAME   — AAP admin username
+#   CONTROLLER_PASSWORD   — AAP admin password
+#   CONTROLLER_VERIFY_SSL — TLS validation flag ("true"/"false"); defaults to "true"
 #
 # NOTE: The AAP OIDC issuer is enabled by default on AAP 2.7 platform-gateway deployments.
 # Verify it is active before running this playbook:
@@ -26,10 +29,10 @@
     - vars.yml
 
   vars:
-    # Bootstrap credentials injected by the AAP Admin Credential (custom credential type)
-    # controller_host, controller_username, controller_password, controller_verify_ssl
-    # are all supplied as extra vars by the credential injector — no defaults needed here.
-    aap_api_base: "{{ controller_host }}/api/controller"
+    # Bootstrap credentials read from environment variables (CONTROLLER_*).
+    # AAP's built-in "Red Hat Ansible Automation Platform" credential type injects these
+    # automatically when attached to the job template.
+    aap_api_base: "{{ lookup('env', 'CONTROLLER_HOST') }}/api/controller"
     # Organization that will own the credential instance
     aap_organization: "Default"
     # AAP project name — used to look up the project ID for job template creation
@@ -41,13 +44,14 @@
     - name: Fail if required controller credentials are not set
       ansible.builtin.fail:
         msg: >-
-          Required variable '{{ item }}' is not set.
-          Attach the AAP Admin Credential to this job template.
-      when: (vars[item] is not defined) or (vars[item] | length == 0)
+          Required environment variable '{{ item }}' is not set.
+          Attach the built-in "Red Hat Ansible Automation Platform" credential type to this job template,
+          or export the CONTROLLER_* variables before launching.
+      when: lookup('env', item) | length == 0
       loop:
-        - controller_host
-        - controller_username
-        - controller_password
+        - CONTROLLER_HOST
+        - CONTROLLER_USERNAME
+        - CONTROLLER_PASSWORD
 
     # -------------------------------------------------------------------------
     # Task 1 — Create the custom credential type for HashiCorp Vault JWT auth
@@ -56,8 +60,8 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/credential_types/"
         method: POST
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
@@ -93,7 +97,7 @@
           - 200
           - 201
           - 400
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: credential_type_result
       failed_when:
         - credential_type_result.status == 400
@@ -107,10 +111,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/credential_types/?name=HashiCorp+Vault+JWT"
         method: GET
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: credential_type_lookup
 
     - name: Capture credential type ID
@@ -128,10 +132,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/organizations/?name={{ aap_organization | urlencode }}"
         method: GET
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: org_lookup
 
     - name: Capture organization ID
@@ -142,8 +146,8 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/credentials/"
         method: POST
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
@@ -161,7 +165,7 @@
           - 200
           - 201
           - 400
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: credential_result
       failed_when:
         - credential_result.status == 400
@@ -181,8 +185,8 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/credential_types/"
         method: POST
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
@@ -205,7 +209,7 @@
           - 200
           - 201
           - 400
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: vault_bootstrap_type_result
       failed_when:
         - vault_bootstrap_type_result.status == 400
@@ -215,10 +219,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/credential_types/?name=Vault+Bootstrap+Token"
         method: GET
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: vault_bootstrap_type_lookup
 
     - name: Report Vault Bootstrap Token credential type
@@ -234,10 +238,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/projects/?name={{ aap_project_name | urlencode }}"
         method: GET
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: project_lookup
 
     - name: Fail if project not found
@@ -253,10 +257,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/inventories/?name={{ aap_inventory_name | urlencode }}"
         method: GET
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: inventory_lookup
 
     - name: Fail if inventory not found
@@ -272,10 +276,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/credentials/?name=Vault+Bootstrap+Token+-+HCP&credential_type={{ vault_bootstrap_type_lookup.json.results[0].id }}"
         method: GET
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: vault_bootstrap_cred_lookup
 
     - name: Capture Vault Bootstrap Token credential ID (if it exists)
@@ -287,10 +291,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/credentials/?name=Vault+JWT+-+{{ vault_jwt_role_name | urlencode }}"
         method: GET
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: vault_jwt_cred_lookup
 
     - name: Capture Vault JWT credential ID
@@ -302,8 +306,8 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/job_templates/"
         method: POST
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
@@ -316,7 +320,7 @@
           playbook: "{{ item.playbook }}"
           extra_vars: "{{ item.extra_vars | default({}) | to_json }}"
         status_code: [200, 201, 400]
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: jt_result
       failed_when:
         - jt_result.status == 400
@@ -353,10 +357,10 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/job_templates/?name={{ item | urlencode }}"
         method: GET
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       register: jt_lookup
       loop:
         - "2 - Configure HCP Vault OIDC"
@@ -383,15 +387,15 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/job_templates/{{ item }}/credentials/"
         method: POST
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
         body_format: raw
         body: '{"id": {{ vault_bootstrap_cred_id | int }} }'
         status_code: [200, 201, 204, 400]
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       failed_when:
         - item | string | length > 0
         - jt_bootstrap_attach.status == 400
@@ -411,15 +415,15 @@
       ansible.builtin.uri:
         url: "{{ aap_api_base }}/v2/job_templates/{{ item }}/credentials/"
         method: POST
-        url_username: "{{ controller_username }}"
-        url_password: "{{ controller_password }}"
+        url_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
         body_format: raw
         body: '{"id": {{ vault_jwt_cred_id | int }} }'
         status_code: [200, 201, 204, 400]
-        validate_certs: "{{ controller_verify_ssl }}"
+        validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"
       failed_when:
         - item | string | length > 0
         - jt_jwt_attach.status == 400
