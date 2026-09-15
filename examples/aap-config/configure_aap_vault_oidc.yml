@@ -199,8 +199,8 @@
             required:
               - "vault_token"
           injectors:
-            extra_vars:
-              vault_token: "{% raw %}{{ vault_token }}{% endraw %}"
+            env:
+              VAULT_TOKEN: "{% raw %}{{ vault_token }}{% endraw %}"
         status_code:
           - 200
           - 201

@@ -105,7 +105,7 @@ Choose the path that matches your Vault deployment. If you are using **both** se
 Run the Vault configuration playbook as an AAP job template. It enables the JWT auth method, creates the policy and role, and writes the demo secret.
 
 1. Go to **Resources → Templates** → open `2a - Configure Vault OIDC (self-managed)`
-2. Under **Credentials**, attach the `Vault Bootstrap Token - <your-cluster>` credential (type: *Vault Bootstrap Token*). This injects `vault_token` as an extra var.
+2. Under **Credentials**, attach the `Vault Bootstrap Token - <your-cluster>` credential (type: *Vault Bootstrap Token*). This injects `VAULT_TOKEN` as an environment variable (masked in log output).
 3. In the **Extra Variables** field, supply the environment-specific values:
 
    ```yaml
@@ -133,7 +133,7 @@ After the job completes successfully, confirm in Vault:
 Run the HCP Vault Dedicated configuration playbook as an AAP job template. It enables the JWT auth method in the `admin` namespace, creates the policy and role, and writes the demo secret.
 
 1. Go to **Resources → Templates** → open `2 - Configure HCP Vault OIDC`
-2. Under **Credentials**, attach the `Vault Bootstrap Token - HCP` credential (type: *Vault Bootstrap Token*). This injects `vault_token` as an extra var.
+2. Under **Credentials**, attach the `Vault Bootstrap Token - HCP` credential (type: *Vault Bootstrap Token*). This injects `VAULT_TOKEN` as an environment variable (masked in log output).
 3. In the **Extra Variables** field, supply the environment-specific values:
 
    ```yaml

@@ -80,8 +80,8 @@ required:
 
 **Injector Configuration:**
 ```yaml
-extra_vars:
-  vault_token: '{{ vault_token }}'
+env:
+  VAULT_TOKEN: '{{ vault_token }}'
 ```
 
 ### 2 — Create a credential instance for HCP

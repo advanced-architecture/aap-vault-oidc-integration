@@ -224,7 +224,20 @@ After this playbook completes, the **HashiCorp Vault JWT** credential type and a
 
 - **Creates a custom credential type** named `HashiCorp Vault JWT` with three input fields (`vault_addr`, `vault_jwt_mount`, `vault_role`) and an injector that exposes those values as Ansible extra vars inside job runs.
 - **Creates a credential instance** of the `HashiCorp Vault JWT` type, populated with the Vault connection details from `vars.yml`, ready to be attached to any AAP job template.
-- **Creates a custom credential type** named `Vault Bootstrap Token` with a single secret `vault_token` field and an extra-vars injector — used by the Vault config job templates. The credential *instance* (which contains the actual token) must be created manually after this playbook runs.
+- **Creates a custom credential type** named `Vault Bootstrap Token` with a single secret `vault_token` field and an `env` injector (`VAULT_TOKEN`) — used by the Vault config job templates. The credential *instance* (which contains the actual token) must be created manually after this playbook runs.
+
+---
+
+## Credential Injectors & Secret Masking in AAP
+
+In AAP, custom credential types define how secrets and inputs are exposed to job execution environments:
+
+- **`extra_vars` injector:** Injected values become regular Ansible variables. These are **not** added to AAP's runner-level `no_log` string-scrubbing word list. Consequently, expressions like `X-Vault-Token: "{{ vault_token }}"` in `ansible.builtin.uri` tasks print the plain-text Vault token in job output / standard out if verbosity is enabled.
+- **`env` injector:** Any credential field marked `secret: true` and mapped via `env: { VAULT_TOKEN: "{{ vault_token }}" }` causes the AAP runner to add the secret value to its runtime scrubber. Any occurrence of that secret value across all stdout/stderr streams (including within serialized headers of HTTP requests) is automatically masked with `********`.
+
+**Documentation Reference:**
+- [Red Hat Ansible Automation Platform — Custom Credential Types & Injectors](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/custom-credential-types#custom_credential_types)
+- [Ansible Runner Secret Masking / Passwords Documentation](https://ansible-runner.readthedocs.io/en/latest/intro/#passwords-and-sensitive-data) (describes the runner-level environment variable scrubber and wordlist masking mechanism)
 
 ---
 

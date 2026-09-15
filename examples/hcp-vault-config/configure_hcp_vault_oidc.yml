@@ -14,12 +14,10 @@
 #     HCP portal: Access Control → Service Principals → your principal →
 #     Generate token.
 #
-# vault_token is injected by the Vault Bootstrap Token credential attached to
-# this job template. Create a custom credential type with the following injector:
-#   env:
-#     VAULT_TOKEN: '{{ vault_token }}'
-# Then create a credential instance with your HCP service principal token and
-# attach it to this job template.
+# VAULT_TOKEN is injected as an environment variable by the Vault Bootstrap Token
+# credential attached to this job template. Using an 'env' injector with secret: true
+# ensures AAP runner automatically adds the token to its no_log scrub list,
+# masking any appearance (including in X-Vault-Token HTTP headers) with ********.
 # =============================================================================
 
 - name: Configure HCP Vault Dedicated JWT auth method for AAP OIDC integration
@@ -29,11 +27,14 @@
   vars_files:
     - vars.yml
 
+  vars:
+    vault_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+
   tasks:
-    - name: Fail if vault_token is not set
+    - name: Fail if VAULT_TOKEN is not set
       ansible.builtin.fail:
-        msg: "vault_token is not set. Attach the Vault Bootstrap Token credential to this job template."
-      when: (vault_token is not defined) or (vault_token | length == 0)
+        msg: "VAULT_TOKEN environment variable is not set. Attach the Vault Bootstrap Token credential to this job template."
+      when: (vault_token | default('', true) | length == 0)
 
     - name: Enable JWT auth method at configured mount path
       ansible.builtin.uri:
