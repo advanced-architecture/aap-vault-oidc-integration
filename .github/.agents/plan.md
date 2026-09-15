@@ -155,6 +155,34 @@ sequenceDiagram
 
 ---
 
+### aap-admin-builtin-credential
+
+**Intent:** Replace the custom "AAP Admin Credential" credential type with the built-in **Red Hat Ansible Automation Platform** credential type, and switch all AAP-admin-facing playbooks to read controller credentials from env vars (`CONTROLLER_*`) instead of extra_vars. This removes a custom credential type that users must manually create and replaces it with one that ships with AAP; reading from env also ensures `CONTROLLER_PASSWORD` is in AAP's runner-level `no_log` scrub list, preventing leakage in verbose play-vars output.
+
+**Expected Outcomes:**
+- No custom "AAP Admin Credential" type is referenced anywhere in the repo.
+- `configure_aap_vault_oidc.yml` and `configure_vault_secret_lookup.yml` read `CONTROLLER_HOST`, `CONTROLLER_USERNAME`, `CONTROLLER_PASSWORD`, `CONTROLLER_VERIFY_SSL` via `lookup('env', …)`.
+- Guard `fail` tasks check `lookup('env', item) | length == 0` with loop items as the env var names.
+- `examples/aap-config/README.md` Bootstrap Credential Setup section documents the built-in type only.
+- All other behaviour (credential type creation, job template creation, credential attachment) is unchanged.
+
+**Changeset:**
+
+| File | Change |
+|---|---|
+| `examples/aap-config/configure_aap_vault_oidc.yml` | Header comment; `aap_api_base` var; guard task loop + `when`; every `url_username`, `url_password`, `validate_certs` (11 occurrences each) → `lookup('env', 'CONTROLLER_*')` |
+| `examples/vault-secret-lookup/configure_vault_secret_lookup.yml` | Header comment; `aap_api_base` var; guard task; every `url_username`, `url_password`, `validate_certs` (3 uri tasks) → `lookup('env', 'CONTROLLER_*')` |
+| `examples/aap-config/README.md` | Replace Bootstrap Credential Setup section (custom type creation + instance steps) with single step: create instance of built-in type; update Variables table; update How to Run |
+
+**Notes:**
+- `validate_certs` env var is boolean in the built-in type but env vars are strings — use `| default(true, true)` to handle empty string as `true`.
+- The built-in type also provides `TOWER_*` and `AAP_*` aliases; `CONTROLLER_*` is preferred as the canonical modern name.
+- The `Vault Bootstrap Token` custom credential type (injecting `vault_token`) is a separate task (**aap-credential-hide-token-uri**) and is not changed here.
+
+**Status:** `[ ] pending`
+
+---
+
 ### post-validation-polish
 
 **Intent:** After validation, make any corrections and final quality pass before publishing.
