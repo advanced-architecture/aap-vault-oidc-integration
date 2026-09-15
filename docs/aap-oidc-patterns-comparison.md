@@ -2,15 +2,15 @@
 
 > **Sources:** Red Hat AAP 2.7 documentation, Red Hat Developer articles, community research  
 > **Date:** 2026-09-15  
-> **Scope:** Architectural comparison of the two OIDC-based Vault integration patterns available in AAP 2.7
+> **Scope:** Architectural comparison of the two OIDC-based Vault integration patterns.
 
 ---
 
 ## Overview
 
-AAP 2.7 supports two distinct patterns for authenticating to Vault using OIDC JWTs.
+This document explores two distinct patterns for authenticating to Vault using OIDC JWTs. 
 They share the same underlying token issuance mechanism but differ fundamentally in
-**who handles the JWT** and **how secrets reach the playbook**.
+**who handles the JWT** and **how secrets reach the playbook**. One is supported as a documented feature of AAP 2.7. The other is undefined.
 
 | | Pattern 1 — AAP-native secret lookup | Pattern 2 — Playbook-level JWT exchange |
 |---|---|---|
