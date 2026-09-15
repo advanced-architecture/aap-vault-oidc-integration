@@ -47,8 +47,13 @@ aap-vault-oidc-integration/
 │   │   ├── read_vault_secret.yml                # End-to-end demo: AAP JWT → Vault login → KV read (self-managed)
 │   │   ├── vars.yml
 │   │   └── README.md
-│   └── hcp-demo-playbook/
-│       ├── read_hcp_vault_secret.yml            # End-to-end demo: AAP JWT → HCP Vault login → KV read
+│   ├── hcp-demo-playbook/
+│   │   ├── read_hcp_vault_secret.yml            # End-to-end demo: AAP JWT → HCP Vault login → KV read
+│   │   ├── vars.yml
+│   │   └── README.md
+│   └── vault-secret-lookup/
+│       ├── configure_vault_secret_lookup.yml    # AAP-native OIDC lookup: create Vault Value credential type + credentials
+│       ├── demo_vault_secret_lookup.yml         # Demo: AAP fetches secret via OIDC before job runs; injects as extra var
 │       ├── vars.yml
 │       └── README.md
 └── .github/.agents/
@@ -130,13 +135,13 @@ sequenceDiagram
 - No real tokens or cluster URLs committed — only placeholder values in `vars.yml` files.
 
 **Todo List:**
-1. Confirm `FEATURE_OIDC_WORKLOAD_IDENTITY_ENABLED` is set on the AAP instance.
-2. Confirm OIDC issuer is active: `curl -L https://<aap-host>/o/.well-known/openid-configuration/` — should return a valid OIDC discovery document.
-3. Run Step 1: add repo as AAP Project.
-4. Run Step 2: run `configure_aap_vault_oidc.yml` job template; verify credential types created.
-5. Run Step 3A (self-managed) or 3B (HCP): run Vault config job template; verify JWT auth, policy, role, secret.
-6. Run Step 4: run demo playbook job template; confirm `Keys found: ['username', 'password']` in output.
-7. Confirm `AAP_JWT_TOKEN` is the correct env var name; update playbook comment if different.
+1. ✅ Confirm `FEATURE_OIDC_WORKLOAD_IDENTITY_ENABLED` is set on the AAP instance.
+2. ✅ Confirm OIDC issuer is active — confirmed live. Issuer: `https://<aap-host>/o`
+3. ✅ Run Step 1: add repo as AAP Project — synced green.
+4. ✅ Run Step 2: run `configure_aap_vault_oidc.yml` job template — `HashiCorp Vault JWT` credential type and `Vault JWT - aap-automation` credential created (HTTP 201).
+5. ✅ Run Step 3B (HCP): run `configure_hcp_vault_oidc.yml` job template — JWT auth, policy, role, KV v2 engine, and demo secret created successfully.
+6. ✅ Run bootstrap playbook — all six job templates created, Vault JWT credential attached to demo templates.
+7. Confirm `AAP_JWT_TOKEN` is the correct env var name — determined not to be an env var injection; AAP uses built-in OIDC credential type instead.
 8. Update `demo.md` troubleshooting table with any new failure modes encountered.
 9. Strip all real tokens/cluster URLs before committing; replace with placeholder values.
 
