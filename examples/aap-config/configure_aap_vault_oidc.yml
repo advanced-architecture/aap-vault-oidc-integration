@@ -388,9 +388,8 @@
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
-        body_format: json
-        body:
-          id: "{{ vault_bootstrap_cred_id | int }}"
+        body_format: raw
+        body: '{"id": {{ vault_bootstrap_cred_id | int }} }'
         status_code: [200, 201, 204, 400]
         validate_certs: "{{ controller_verify_ssl }}"
       failed_when:
@@ -417,9 +416,8 @@
         force_basic_auth: true
         headers:
           Content-Type: "application/json"
-        body_format: json
-        body:
-          id: "{{ vault_jwt_cred_id | int }}"
+        body_format: raw
+        body: '{"id": {{ vault_jwt_cred_id | int }} }'
         status_code: [200, 201, 204, 400]
         validate_certs: "{{ controller_verify_ssl }}"
       failed_when:
