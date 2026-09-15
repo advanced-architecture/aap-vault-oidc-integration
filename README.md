@@ -112,30 +112,28 @@ See the HCP Vault Dedicated example playbooks:
 
 ## Usage / Quick Start
 
-1. **Configure Vault** — enable the JWT auth method, create the role, and seed the demo secret:
-   see [`examples/vault-config/`](examples/vault-config/)
+See [`demo.md`](demo.md) for the full step-by-step walkthrough. The short form:
 
-2. **Configure AAP** — enable the OIDC issuer and set up the Vault credential type in AAP (review required [bootstrap permissions](examples/aap-config/README.md#bootstrap-credential-permissions)):
+1. **Configure AAP** — creates the Vault JWT credential type, credential instance, and all job templates automatically (review required [bootstrap permissions](examples/aap-config/README.md#bootstrap-credential-permissions)):
    see [`examples/aap-config/`](examples/aap-config/)
 
-3. **Run the demo** — import and execute the end-to-end demonstration playbook as an AAP job template:
-   see [`examples/demo-playbook/`](examples/demo-playbook/)
+2. **Configure Vault** — enable the JWT auth method, create the role, and seed the demo secret:
+   - Self-managed: see [`examples/vault-config/`](examples/vault-config/)
+   - HCP Vault Dedicated: see [`examples/hcp-vault-config/`](examples/hcp-vault-config/)
 
-### HCP Vault Dedicated
+3. **Run the JWT injection demo** — the playbook authenticates to Vault at runtime using the AAP-injected JWT and reads a KV secret:
+   - Self-managed: see [`examples/demo-playbook/`](examples/demo-playbook/)
+   - HCP Vault Dedicated: see [`examples/hcp-demo-playbook/`](examples/hcp-demo-playbook/)
 
-Step 2 (Configure AAP) is shared between both deployment models — skip it if you have already completed it for self-managed Vault.
-
-4. **Configure HCP Vault Dedicated** — enable the JWT auth method, create the role and policy, and seed the demo secret in the `admin` namespace:
-   see [`examples/hcp-vault-config/`](examples/hcp-vault-config/)
-
-5. **Run the HCP demo** — import and execute the HCP Vault Dedicated demonstration playbook as an AAP job template:
-   see [`examples/hcp-demo-playbook/`](examples/hcp-demo-playbook/)
+4. **Run the AAP-native secret lookup demo** *(optional)* — AAP fetches the secret before the job runs and injects it as an extra var; the playbook never calls Vault directly:
+   see [`examples/vault-secret-lookup/`](examples/vault-secret-lookup/)
 
 ---
 
 ## References
 
 - [AAP 2.7 — What's New: OIDC Authentication for HashiCorp Vault](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/whats_new-oidc_authentication_for_hashicorp_vault)
+- [AAP 2.7 — What's New: Claims for workload identity](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/whats_new-claims_for_workload_identity)
 - [Just-in-time access to HashiCorp Vault using the Red Hat Ansible Automation Platform OIDC provider](https://developers.redhat.com/articles/2026/08/11/just-in-time-access-to-hashicorp-vault-with-ansible-oidc-provider?source=sso#enabling_the_oidc_feature_for_hashicorp_vault)
 - [HashiCorp Vault — JWT/OIDC Auth Method](https://developer.hashicorp.com/vault/docs/auth/jwt)
 - [Ansible `community.hashi_vault` Collection](https://docs.ansible.com/ansible/latest/collections/community/hashi_vault/)
